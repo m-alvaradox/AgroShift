@@ -1,6 +1,5 @@
 """Pruebas del catálogo, las estrategias y las reglas de P4."""
 
-import csv
 import tempfile
 import unittest
 from pathlib import Path
