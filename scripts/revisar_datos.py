@@ -13,9 +13,10 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "app"))
-from utils.carga import CONTRATOS, faltantes  # noqa: E402
+from utils.carga import CARPETAS, CONTRATOS, MOCK, faltantes  # noqa: E402
 
 PROC = ROOT / "data" / "processed"
+REALES = [c for c in CARPETAS if c != MOCK]  # app/data, data/processed, data
 
 print(f"\nArchivos en {PROC}:\n")
 for p in sorted(PROC.glob("*")):
@@ -26,14 +27,15 @@ for p in sorted(PROC.glob("*")):
     else:
         print(f"- {p.name}")
 
-print("\nContratos que usa la app:\n")
+print("\nContratos que usa la app (busca en app/data, data/processed y data):\n")
 for nombre, cols in CONTRATOS.items():
-    p = PROC / nombre
-    if not p.exists():
+    copias = [c / nombre for c in REALES if (c / nombre).exists()]
+    if not copias:
         print(f"  [ falta ]  {nombre}")
         continue
-    falta = faltantes(p, nombre)
-    estado = "[  ok   ]" if not falta else "[ no ok ]"
-    detalle = "" if not falta else f"  -> le faltan: {', '.join(falta)}"
-    print(f"  {estado}  {nombre}{detalle}")
+    for p in copias:
+        falta = faltantes(p, nombre)
+        estado = "[  ok   ]" if not falta else "[ no ok ]"
+        detalle = "" if not falta else f"  -> le faltan: {', '.join(falta)}"
+        print(f"  {estado}  {p.relative_to(ROOT).as_posix()}{detalle}")
 print()

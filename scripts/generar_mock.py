@@ -24,13 +24,16 @@ MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun",
 LLUVIA_BASE = [190, 260, 280, 200, 60, 15, 5, 3, 4, 6, 8, 45]
 ET0_BASE = [120, 110, 125, 120, 115, 100, 100, 110, 115, 120, 120, 125]
 
-# Recuadro de Daule y 3 zonas de ejemplo (franjas de oeste a este)
+# Recuadro de Daule y 3 zonas de ejemplo (franjas de oeste a este).
+# Misma numeracion y nombres que las zonas reales de P3 (data/processed/zonas_resumen.csv).
+# "tipo" solo se usa aqui para simular valores; la app reconoce la zona por su nombre.
 OESTE, ESTE, SUR, NORTE = -80.08, -79.93, -1.93, -1.78
 ZONAS = [
-    {"zona_id": 1, "nombre_comun": "Loma seca", "x0": -80.08, "x1": -80.05},
-    {"zona_id": 2, "nombre_comun": "Zona de transición", "x0": -80.05, "x1": -80.02},
-    {"zona_id": 3, "nombre_comun": "Zona baja que se encharca", "x0": -80.02, "x1": -79.93},
+    {"zona_id": 1, "nombre_comun": "Zona baja que se encharca", "tipo": "baja", "x0": -80.02, "x1": -79.93},
+    {"zona_id": 2, "nombre_comun": "Ladera con riesgo de erosión", "tipo": "ladera", "x0": -80.05, "x1": -80.02},
+    {"zona_id": 3, "nombre_comun": "Loma seca", "tipo": "loma", "x0": -80.08, "x1": -80.05},
 ]
+ID_DE = {z["tipo"]: z["zona_id"] for z in ZONAS}
 
 # Anios ENSO aproximados, solo para el ejemplo (P1 debe confirmarlos)
 NINO = {2002, 2009, 2015, 2023}
@@ -108,10 +111,10 @@ def series_zonas(clima):
             ll = clima.loc[(clima["anio"] == fecha.year) & (clima["mes"] == fecha.month),
                            "lluvia_mm"].iloc[0]
             lluvioso = m in (0, 1, 2, 3)
-            if zid == 3:   # arroz en zona baja: dos picos de verdor al anio
+            if z["tipo"] == "baja":   # arroz en zona baja: dos picos de verdor al anio
                 ndvi = 0.35 + 0.35 * np.sin(np.pi * ((m % 6) / 5))
                 ndwi = 0.15 if lluvioso else -0.20
-            elif zid == 2:
+            elif z["tipo"] == "ladera":
                 ndvi = 0.40 + 0.25 * np.sin(np.pi * ((m % 6) / 5))
                 ndwi = 0.02 if m in (1, 2) else -0.25
             else:          # loma: maiz en invierno y suelo mas seco en verano
@@ -147,25 +150,28 @@ def estrategias():
         "B": {"agua": 7500, "suelo": 8, "plagas": 8, "ingresos": 7},
         "C": {"agua": 6800, "suelo": 9, "plagas": 9, "ingresos": 6},
     }
-    ajuste_zona = {1: {"A": 1.25, "B": 0.95, "C": 0.85},   # loma: arroz necesita mas riego
-                   2: {"A": 1.05, "B": 1.0, "C": 0.95},
-                   3: {"A": 0.95, "B": 1.05, "C": 1.0}}
+    ajuste_zona = {"loma": {"A": 1.25, "B": 0.95, "C": 0.85},   # loma: arroz necesita mas riego
+                   "ladera": {"A": 1.05, "B": 1.0, "C": 0.95},
+                   "baja": {"A": 0.95, "B": 1.05, "C": 1.0}}
     ajuste_esc = {"normal": 1.0, "nino": 0.8, "nina": 1.2}
     filas = []
-    for zid in (1, 2, 3):
+    for z in ZONAS:
+        zid, tipo = z["zona_id"], z["tipo"]
         for esc, fe in ajuste_esc.items():
             for est, v in base.items():
-                agua = v["agua"] * ajuste_zona[zid][est] * fe
+                agua = v["agua"] * ajuste_zona[tipo][est] * fe
                 nota_agua = round(10 - (agua - 5000) / 1000, 1)
-                riesgo_inund = zid == 3 and esc == "nino" and est in ("B", "C")
+                riesgo_inund = tipo == "baja" and esc == "nino" and est in ("B", "C")
                 # En la zona baja el maiz (estrategia C) sufre con el encharcamiento
-                maiz_en_baja = zid == 3 and est == "C"
+                maiz_en_baja = tipo == "baja" and est == "C"
+                # En la ladera, dejar el suelo pelado entre ciclos favorece la erosion
+                erosion = tipo == "ladera" and est == "A"
                 filas.append({
                     "estrategia": est, "zona_id": zid, "escenario": esc,
                     "agua_m3_ha": round(agua, -1),
                     "puntaje": None,  # lo calcula la app segun las prioridades
                     "nota_agua": max(0, min(10, nota_agua)),
-                    "nota_suelo": v["suelo"] - (2 if maiz_en_baja else 0),
+                    "nota_suelo": v["suelo"] - (2 if maiz_en_baja else 0) - (1 if erosion else 0),
                     "nota_plagas": v["plagas"],
                     "nota_ingresos": v["ingresos"] - (2 if riesgo_inund else 0) - (2 if maiz_en_baja else 0),
                 })
@@ -207,16 +213,19 @@ def reglas():
     return [
         {"id": "R1", "texto_campo": "No siembres soya en zonas que se inundaron en ese mes en 2 o más de los últimos 5 años.",
          "condicion": "ndwi > 0 en el mes de siembra en >= 2 de 5 años",
-         "evidencia": "NDWI de Landsat 8 y 9, 2021-2025", "zona_id": 3},
+         "evidencia": "NDWI de Landsat 8 y 9, 2021-2025", "zona_id": ID_DE["baja"]},
         {"id": "R2", "texto_campo": "Siembra soya apenas cosechas el arroz de invierno, mientras el suelo aún guarda humedad.",
          "condicion": "NDMI alto en mayo-junio después de la cosecha",
          "evidencia": "Serie de NDMI por zona", "zona_id": None},
         {"id": "R3", "texto_campo": "En la loma, prefiere maíz en invierno y soya en verano; el arroz necesita mucha más agua.",
          "condicion": "elevación > umbral y balance de agua negativo",
-         "evidencia": "SRTM y balance de agua con NASA POWER", "zona_id": 1},
+         "evidencia": "SRTM y balance de agua con NASA POWER", "zona_id": ID_DE["loma"]},
         {"id": "R4", "texto_campo": "Si se anuncia El Niño, evita sembrar en la zona baja al inicio del invierno.",
          "condicion": "año El Niño y zona baja",
-         "evidencia": "Lluvia de IMERG en años El Niño", "zona_id": 3},
+         "evidencia": "Lluvia de IMERG en años El Niño", "zona_id": ID_DE["baja"]},
+        {"id": "R5", "texto_campo": "En la ladera, siembra siguiendo las curvas de nivel y deja rastrojo sobre el suelo para que la lluvia no lo arrastre.",
+         "condicion": "pendiente alta y lluvias fuertes",
+         "evidencia": "Pendiente del SRTM", "zona_id": ID_DE["ladera"]},
     ]
 
 

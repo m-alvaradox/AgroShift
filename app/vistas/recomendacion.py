@@ -49,7 +49,7 @@ for col, titulo, clave in bloques:
 
 # --- Reglas para el campo ----------------------------------------------------------------------
 st.subheader("Reglas para tu campo")
-reglas = [r for r in carga.reglas() if r.get("zona_id") in (None, zid)]
+reglas = carga.reglas_zona(zid)  # las de esta zona + las generales
 for r in reglas:
     st.checkbox(r["texto_campo"], key=f"regla_{r.get('id', r['texto_campo'][:20])}",
                 help=f"Por qué: {r['evidencia']}")

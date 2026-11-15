@@ -256,6 +256,9 @@ def frase_finca(zona_tipo: str, escenario: str, clim: pd.DataFrame) -> str:
         frase = f"Tu terreno se encharca de {_rango(m['lluvioso'] or m['agua'])}."
     elif zona_tipo == "loma":
         frase = f"Tu terreno es alto y no se inunda, pero le falta agua de {_rango(m['seco'])}."
+    elif zona_tipo == "ladera":
+        frase = (f"Tu terreno tiene pendiente: de {_rango(m['lluvioso'] or m['agua'])} las lluvias "
+                 "fuertes pueden arrastrar el suelo.")
     else:
         frase = f"Tu terreno recibe agua de {_rango(m['agua'])} y se seca de {_rango(m['seco'])}."
     extra = {"nino": " Este año puede llover más de lo normal.",
@@ -300,7 +303,8 @@ def semaforo_suelo(serie: pd.DataFrame) -> dict:
 
 
 def semaforo_inundacion(zona_tipo: str, escenario: str, serie: pd.DataFrame) -> dict:
-    puntos = {"loma": 0, "transicion": 1, "baja": 2}.get(zona_tipo, 1)
+    # la ladera escurre el agua (su riesgo es la erosion), pero esta casi tan baja como la zona baja
+    puntos = {"loma": 0, "ladera": 1, "transicion": 1, "baja": 2}.get(zona_tipo, 1)
     puntos += {"nina": -1, "normal": 0, "nino": 1}.get(escenario, 0)
     s = serie.dropna(subset=["ndwi"]).sort_values("fecha") if not serie.empty else serie
     if not s.empty and float(s.iloc[-1]["ndwi"]) > 0:
@@ -345,6 +349,8 @@ def consejos(zona_tipo: str, escenario: str, secuencia: list[str]) -> list[str]:
     por_zona = {
         "baja": "En lluvias siembra solo arroz en la parte baja: es el que aguanta el agua.",
         "loma": "En la loma no guardes el arroz para la seca: pide mucha agua.",
+        "ladera": "En la ladera siembra siguiendo las curvas de nivel y deja rastrojo encima "
+                  "para que la lluvia no se lleve el suelo.",
         "transicion": "Haz zanjas para sacar el agua cuando llueva fuerte varios días.",
     }
     por_anio = {

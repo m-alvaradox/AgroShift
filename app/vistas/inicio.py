@@ -51,8 +51,18 @@ with der:
 # --- Mapa (opcional) -------------------------------------------------------------------------
 with st.expander("🗺️ Ver mi zona en el mapa"):
     geo = carga.zonas()
-    lons = [p[0] for f in geo["features"] for p in f["geometry"]["coordinates"][0]]
-    lats = [p[1] for f in geo["features"] for p in f["geometry"]["coordinates"][0]]
+
+    def puntos(coords):
+        """Todos los [lon, lat] de un Polygon o MultiPolygon (cualquier nivel de anidado)."""
+        if coords and isinstance(coords[0], (int, float)):
+            yield coords
+        else:
+            for c in coords:
+                yield from puntos(c)
+
+    todos = [p for f in geo["features"] for p in puntos(f["geometry"]["coordinates"])]
+    lons = [p[0] for p in todos]
+    lats = [p[1] for p in todos]
     mapa = folium.Map(location=[sum(lats) / len(lats), sum(lons) / len(lons)],
                       zoom_start=12, tiles=None, control_scale=True)
     folium.TileLayer(
@@ -62,7 +72,7 @@ with st.expander("🗺️ Ver mi zona en el mapa"):
 
     def estilo_zona(feature):
         elegida = feature["properties"]["zona_id"] == zid
-        return {"fillColor": ui.COLOR_ZONA.get(feature["properties"]["zona_id"], "#888"),
+        return {"fillColor": ui.color_zona(feature["properties"].get("nombre_comun", "")),
                 "color": "#fff" if elegida else "#333", "weight": 4 if elegida else 1,
                 "fillOpacity": 0.5 if elegida else 0.2}
 

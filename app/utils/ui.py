@@ -13,7 +13,8 @@ SECA = "#C9A227"            # epoca seca y estado "atento"
 RIESGO = "#C0392B"          # solo para riesgos
 NEUTRO = "#EEF3EA"          # fondos suaves
 
-COLOR_ZONA = {1: "#B9863A", 2: "#7FA650", 3: RIO}
+# Color de cada zona segun su tipo (se reconoce por el nombre, no por el numero)
+COLOR_ZONA = {"loma": "#B9863A", "ladera": "#7FA650", "baja": RIO, "transicion": "#8FB8D8"}
 COLOR_TIPO = {"lluvioso": RIO, "transicion": "#8FB8D8", "seco": SECA}
 COLOR_ESC = {"normal": "#7A869A", "nino": RIO, "nina": SECA}
 NOMBRE_ESC = {"normal": "Año normal", "nino": "Año El Niño", "nina": "Año La Niña"}
@@ -32,12 +33,21 @@ GLOSARIO = {
 
 # --- Estado compartido --------------------------------------------------------------
 
+def zona_inicial(tabla) -> int:
+    """La zona con la que abre la app: la zona baja (buscada por nombre), si no la primera."""
+    for zid, nombre in zip(tabla["zona_id"], tabla["nombre_comun"]):
+        if tipo_zona(nombre) == "baja":
+            return int(zid)
+    return int(tabla["zona_id"].iloc[0])
+
+
 def zona_actual() -> tuple[int, str]:
-    zid = st.session_state.get("zona_id") or 3
-    tabla = carga.tabla_zonas().set_index("zona_id")
-    if zid not in tabla.index:
-        zid = int(tabla.index[-1])
-    return zid, tabla.loc[zid, "nombre_comun"]
+    tabla = carga.tabla_zonas()
+    nombres = dict(zip(tabla["zona_id"].astype(int), tabla["nombre_comun"]))
+    zid = st.session_state.get("zona_id")
+    if zid not in nombres:
+        zid = zona_inicial(tabla)
+    return zid, nombres[zid]
 
 
 def escenario_actual() -> str:
@@ -51,24 +61,41 @@ def pesos_actuales() -> dict:
     return {c: (5 if c in elegidas else 1) for c in logica.CRITERIOS}
 
 
+def tipo_zona(nombre: str) -> str:
+    """
+    'loma', 'ladera', 'baja' o 'transicion' segun el nombre_comun de la zona
+    (lo que usa utils/juego.py). Asi la app no depende del numero de zona.
+    """
+    n = str(nombre).lower()
+    if "loma" in n:
+        return "loma"
+    if "ladera" in n or "erosi" in n:
+        return "ladera"
+    if "baja" in n or "encharca" in n:
+        return "baja"
+    return "transicion"
+
+
+CORTO_ZONA = {"loma": "Loma", "ladera": "Ladera", "baja": "Zona baja", "transicion": "Transición"}
+ICONO_ZONA = {"loma": "⛰️", "ladera": "🏞️", "baja": "🌊", "transicion": "🌿"}
+ETIQUETA_ZONA = {"baja": "Zona baja (se encharca)", "ladera": "Ladera (riesgo de erosión)"}
+
+
 def corto_zona(nombre: str) -> str:
-    n = nombre.lower()
-    return "Loma" if "loma" in n else ("Zona baja" if "baja" in n or "encharca" in n else "Transición")
+    return CORTO_ZONA[tipo_zona(nombre)]
 
 
 def icono_zona(nombre: str) -> str:
-    n = nombre.lower()
-    return "⛰️" if "loma" in n else ("🌊" if "baja" in n or "encharca" in n else "🌿")
+    return ICONO_ZONA[tipo_zona(nombre)]
 
 
-def tipo_zona(nombre: str) -> str:
-    """'loma', 'transicion' o 'baja' (lo que usa utils/juego.py)."""
-    return {"Loma": "loma", "Zona baja": "baja"}.get(corto_zona(nombre), "transicion")
+def color_zona(nombre: str) -> str:
+    return COLOR_ZONA[tipo_zona(nombre)]
 
 
 def etiqueta_zona(nombre: str) -> str:
-    corto = corto_zona(nombre)
-    return f"{icono_zona(nombre)} {'Zona baja (se encharca)' if corto == 'Zona baja' else corto}"
+    t = tipo_zona(nombre)
+    return f"{ICONO_ZONA[t]} {ETIQUETA_ZONA.get(t, CORTO_ZONA[t])}"
 
 
 ETIQUETA_ESC = {"normal": "🌤️ Normal", "nino": "🌧️ El Niño", "nina": "☀️ La Niña"}

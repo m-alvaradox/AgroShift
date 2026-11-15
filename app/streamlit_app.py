@@ -46,7 +46,7 @@ with st.container(key="nav", horizontal=True, wrap=False, gap="small"):
 tabla = carga.tabla_zonas().sort_values("zona_id")
 nombres = dict(zip(tabla["zona_id"].astype(int), tabla["nombre_comun"]))
 if st.session_state.get("zona_id") not in nombres:
-    st.session_state["zona_id"] = int(tabla["zona_id"].iloc[-1])
+    st.session_state["zona_id"] = ui.zona_inicial(tabla)  # la zona baja, buscada por nombre
 if st.session_state.get("escenario") not in ui.ETIQUETA_ESC:
     st.session_state["escenario"] = "normal"
 

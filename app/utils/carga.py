@@ -9,8 +9,13 @@ Busca cada archivo de los contratos en este orden y usa el primero que exista:
 
 Asi la app funciona desde el primer dia con datos falsos y, cuando un
 companero entrega su archivo real, lo toma sin cambiar el codigo.
+
+Los archivos originales del equipo NO se modifican: las correcciones
+(nombres de cultivos, textos con tildes danadas, zona_id de las reglas)
+se hacen en memoria al cargarlos.
 """
 import json
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -37,6 +42,48 @@ CONTRATOS = {
     "reglas.json": ["texto_campo", "evidencia"],
 }
 
+# Nombres de cultivos de P4 (cultivos.csv) -> nombres que usa la app
+# (iconos de ui.py y SECUENCIAS de logica.py).
+NOMBRE_CULTIVO = {"arroz": "Arroz", "soya": "Soya", "maiz_duro_amarillo": "Maíz duro"}
+
+# Palabras que llegan con la tilde perdida (caracter de reemplazo U+FFFD).
+REPARAR = {"erosi�n": "erosión", "Erosi�n": "Erosión", "transici�n": "transición"}
+
+
+# --- Lectura de texto con tildes ----------------------------------------------------
+
+def _reparar_texto(s: str) -> str:
+    """Corrige tildes danadas: 'erosi�n' -> 'erosión' y 'erosiÃ³n' -> 'erosión'."""
+    if "Ã" in s or "Â" in s:  # UTF-8 leido como latin-1 (mojibake)
+        try:
+            s = s.encode("latin-1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
+    for malo, bueno in REPARAR.items():
+        s = s.replace(malo, bueno)
+    return s
+
+
+def _reparar(datos):
+    """Aplica _reparar_texto a todos los textos de un JSON (listas y dicts anidados)."""
+    if isinstance(datos, str):
+        return _reparar_texto(datos)
+    if isinstance(datos, list):
+        return [_reparar(d) for d in datos]
+    if isinstance(datos, dict):
+        return {k: _reparar(v) for k, v in datos.items()}
+    return datos
+
+
+def leer_json_archivo(p: Path):
+    """Lee JSON o GeoJSON en UTF-8 (con o sin BOM); si no es UTF-8 valido, en latin-1."""
+    crudo = Path(p).read_bytes()
+    try:
+        texto = crudo.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        texto = crudo.decode("latin-1")
+    return _reparar(json.loads(texto))
+
 
 def faltantes(p: Path, nombre: str) -> list[str]:
     """Columnas del contrato que le faltan al archivo (lista vacia = cumple)."""
@@ -45,7 +92,7 @@ def faltantes(p: Path, nombre: str) -> list[str]:
         if p.suffix == ".csv":
             columnas = set(pd.read_csv(p, nrows=0).columns)
         else:
-            datos = json.loads(p.read_text(encoding="utf-8"))
+            datos = leer_json_archivo(p)
             if p.suffix == ".geojson":
                 datos = [f.get("properties", {}) for f in datos.get("features", [])]
             columnas = set(datos[0].keys()) if datos else set()
@@ -120,7 +167,7 @@ def _csv(path: str, mtime: float, fechas: tuple = ()) -> pd.DataFrame:
 
 @st.cache_data(show_spinner=False)
 def _json(path: str, mtime: float):
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+    return leer_json_archivo(Path(path))
 
 
 def leer_csv(nombre: str, fechas: tuple = ()) -> pd.DataFrame:
@@ -147,8 +194,21 @@ def lluvia_imerg() -> pd.DataFrame:
     return leer_csv("lluvia_imerg_daule.csv", ("fecha",))
 
 
+def _a_entero(v):
+    """zona_id como int; None si viene vacio, null, NaN o no es un numero."""
+    if v is None or (isinstance(v, float) and math.isnan(v)):
+        return None
+    try:
+        return int(float(v))
+    except (TypeError, ValueError):
+        return None
+
+
 def zonas() -> dict:
-    return leer_json("zonas_daule.geojson")
+    geo = leer_json("zonas_daule.geojson")
+    for f in geo["features"]:
+        f["properties"]["zona_id"] = _a_entero(f["properties"].get("zona_id"))
+    return geo
 
 
 def tabla_zonas() -> pd.DataFrame:
@@ -160,7 +220,13 @@ def series() -> pd.DataFrame:
 
 
 def cultivos() -> pd.DataFrame:
-    return leer_csv("cultivos.csv")
+    """cultivos.csv con los nombres que usa la app ('maiz_duro_amarillo' -> 'Maíz duro')."""
+    df = leer_csv("cultivos.csv")
+    df["cultivo"] = [NOMBRE_CULTIVO.get(str(c).strip().lower(), str(c).strip()) for c in df["cultivo"]]
+    if df["tolera_inundacion"].dtype == object:
+        df["tolera_inundacion"] = df["tolera_inundacion"].astype(str).str.strip().str.lower().isin(
+            ["true", "1", "si", "sí", "yes"])
+    return df
 
 
 def estrategias() -> pd.DataFrame:
@@ -172,4 +238,16 @@ def estrategias_info() -> dict:
 
 
 def reglas() -> list[dict]:
-    return leer_json("reglas.json")
+    """Reglas con zona_id normalizado (int o None = regla general)."""
+    return [{**r, "zona_id": _a_entero(r.get("zona_id"))} for r in leer_json("reglas.json")]
+
+
+def reglas_zona(zona_id: int) -> list[dict]:
+    """
+    Reglas de una zona mas las generales. Se tratan como generales las que
+    tienen zona_id null y las que apuntan a una zona que no existe en el mapa
+    (por ejemplo, si la numeracion de reglas.json no coincide con la de P3).
+    """
+    validas = set(tabla_zonas()["zona_id"].dropna().astype(int))
+    return [r for r in reglas()
+            if r["zona_id"] is None or r["zona_id"] == zona_id or r["zona_id"] not in validas]
