@@ -7,23 +7,29 @@ zid, znombre = ui.zona_actual()
 esc = ui.escenario_actual()
 pesos = ui.pesos_actuales()
 
+st.title("✅ Te recomendamos")
+ui.origen_datos()
+if ui.falta("estrategias.csv", "estrategias_info.json"):
+    st.stop()
+
 est = carga.estrategias()
 info = carga.estrategias_info()
 comp = logica.comparar(est, zid, esc, pesos)
+if comp.empty:
+    st.info("Todavía no hay planes para esta zona y este año.", icon="ℹ️")
+    st.stop()
 mejor = comp.iloc[0]
 e = info[mejor["estrategia"]]
-clim = carga.climatologia()
-plan = logica.plan(mejor["estrategia"], clim, carga.cultivos())
-
-st.title("✅ Te recomendamos")
-ui.aviso_datos()
 st.markdown(f"## {e['nombre']}")
 st.markdown(f"Para la **{znombre.lower()}** en un **{ui.NOMBRE_ESC[esc].lower()}**. {e['descripcion']}")
 
 hoy = logica.mes_actual()
-ui.tarjeta_accion(logica.accion_del_mes(plan[0], hoy), hoy)
-ui.franja_anual(clim, [(f"Año {k + 1}" if len(plan) > 1 else "Tu plan", m)
-                       for k, m in enumerate(plan)], mes_hoy=hoy)
+if not ui.falta("climatologia_daule.csv", "cultivos.csv"):
+    clim = carga.climatologia()
+    plan = logica.plan(mejor["estrategia"], clim, carga.cultivos())
+    ui.tarjeta_accion(logica.accion_del_mes(plan[0], hoy), hoy)
+    ui.franja_anual(clim, [(f"Año {k + 1}" if len(plan) > 1 else "Tu plan", m)
+                           for k, m in enumerate(plan)], mes_hoy=hoy)
 
 base = comp[comp["estrategia"] == "A"]
 if len(base) and mejor["estrategia"] != "A":
@@ -49,7 +55,7 @@ for col, titulo, clave in bloques:
 
 # --- Reglas para el campo ----------------------------------------------------------------------
 st.subheader("Reglas para tu campo")
-reglas = carga.reglas_zona(zid)  # las de esta zona + las generales
+reglas = [] if ui.falta("reglas.json") else carga.reglas_zona(zid)  # de esta zona + generales
 for r in reglas:
     st.checkbox(r["texto_campo"], key=f"regla_{r.get('id', r['texto_campo'][:20])}",
                 help=f"Por qué: {r['evidencia']}")

@@ -123,7 +123,7 @@ def zonas_mapa() -> tuple[dict, list, str]:
     """
     p = carga.ruta("zonas_daule.geojson")
     geo, lim, _ = _preparar(str(p), p.stat().st_mtime)
-    if lim and not carga.es_mock("zonas_daule.geojson"):
+    if lim:
         return geo, lim, "zonas"
     aoi = limites(carga.leer_json_archivo(AOI)) if AOI.exists() else None
     return geo, aoi or lim or [[-1.93, -80.08], [-1.78, -79.93]], "aoi"

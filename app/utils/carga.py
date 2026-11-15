@@ -1,14 +1,15 @@
 """
 Carga de datos para la app.
 
-Busca cada archivo de los contratos en este orden y usa el primero que exista:
-  1. app/data/          -> datos reales que se suben con la app (despliegue en Coolify)
+Busca cada archivo de los contratos en este orden y usa el primero que exista
+y tenga las columnas del contrato:
+  1. app/data/          -> datos adaptados para la app (scripts/adaptar_datos.py, capas del mapa)
   2. data/processed/    -> datos reales generados por el equipo
-  3. data/              -> cultivos.csv y reglas.json de P4
-  4. data/mock/         -> datos de prueba (scripts/generar_mock.py)
+  3. data/              -> cultivos.csv, reglas.json y estrategias_info.json de P4
 
-Asi la app funciona desde el primer dia con datos falsos y, cuando un
-companero entrega su archivo real, lo toma sin cambiar el codigo.
+Solo hay datos reales: si falta un archivo, ruta() lanza FaltaArchivo y la
+pagina muestra un aviso en esa seccion (ui.falta) y sigue con el resto.
+data/mock/ (scripts/generar_mock.py) queda solo para pruebas automaticas.
 
 Los archivos originales del equipo NO se modifican: las correcciones
 (nombres de cultivos, textos con tildes danadas, zona_id de las reglas)
@@ -23,11 +24,10 @@ import streamlit as st
 
 APP_DIR = Path(__file__).resolve().parents[1]
 ROOT = APP_DIR.parent
-MOCK = ROOT / "data" / "mock"
-CARPETAS = [APP_DIR / "data", ROOT / "data" / "processed", ROOT / "data", MOCK]
+CARPETAS = [APP_DIR / "data", ROOT / "data" / "processed", ROOT / "data"]
 
 # Columnas minimas que la app necesita de cada archivo (los contratos de datos).
-# Si un archivo real no las tiene, la app NO lo usa y sigue con el de prueba.
+# Si una copia no las tiene, la app la salta y busca en la siguiente carpeta.
 CONTRATOS = {
     "climatologia_daule.csv": ["mes", "nombre_mes", "lluvia_mm", "et0_mm", "tipo_mes"],
     "clima_mensual_daule.csv": ["fecha", "anio", "mes", "lluvia_mm", "et0_mm"],
@@ -41,6 +41,43 @@ CONTRATOS = {
                               "beneficios", "vacios", "riesgos"],
     "reglas.json": ["texto_campo", "evidencia"],
 }
+
+# Quien entrega cada archivo y de que fuente sale (se muestra en "Ver datos tecnicos").
+FUENTES = {
+    "climatologia_daule.csv": (
+        "P1 (Mario)", "NASA POWER diario 2021–2026: lluvia típica (mediana) y ET0 Hargreaves "
+        "(FAO-56) de cada mes. Adaptado con scripts/adaptar_datos.py."),
+    "clima_mensual_daule.csv": (
+        "P1 (Mario)", "NASA POWER diario 2021–2026 sumado por mes (lluvia, ET0, temperatura). "
+        "Adaptado con scripts/adaptar_datos.py."),
+    "lluvia_imerg_daule.csv": (
+        "P1 (Mario)", "NASA GPM IMERG V07 mensual, serie de Mario 2021–2026. Tipo de año según la "
+        "lluvia de diciembre a mayo de cada temporada. Adaptado con scripts/adaptar_datos.py."),
+    "series_zonas.csv": (
+        "P2 (Thomas)", "Landsat 8 y 9: NDVI, NDWI y NDMI mensuales de todo el recuadro de Daule. "
+        "Adaptado con scripts/adaptar_datos.py."),
+    "cultivos.csv": (
+        "P4 (Johan)", "Ciclos de INIAP y coeficientes Kc de FAO-56 para arroz, soya y maíz duro."),
+    "estrategias.csv": (
+        "P1 y P4", "Balance de agua FAO-56 con NASA POWER y los años de IMERG; notas de suelo, "
+        "plagas e ingresos con las reglas de P4. Calculado con scripts/calcular_estrategias.py."),
+    "zonas_daule.geojson": (
+        "P3 (Austin)", "Elevación y pendiente de SRTM agrupadas con K-means en 3 zonas."),
+    "estrategias_info.json": (
+        "P4 (Johan)", "Ficha de cada estrategia según la documentación de P4 (reglas y fuentes) "
+        "y el informe de P1."),
+    "reglas.json": (
+        "P4 (Johan)", "Reglas de campo con su evidencia (FAO, INIAP y extensión universitaria)."),
+}
+
+
+class FaltaArchivo(FileNotFoundError):
+    """Falta un archivo real del contrato (la pagina muestra un aviso y sigue)."""
+
+    def __init__(self, nombre: str):
+        self.nombre = nombre
+        self.responsable = FUENTES.get(nombre, ("el equipo", ""))[0]
+        super().__init__(f"Falta {nombre}: lo entrega {self.responsable}.")
 
 # Nombres de cultivos de P4 (cultivos.csv) -> nombres que usa la app
 # (iconos de ui.py y SECUENCIAS de logica.py).
@@ -102,23 +139,19 @@ def faltantes(p: Path, nombre: str) -> list[str]:
 
 
 @st.cache_data(show_spinner=False)
-def _buscar(nombre: str, firma: tuple) -> tuple[str, list]:
-    """Devuelve la ruta a usar y la lista de archivos reales rechazados."""
+def _buscar(nombre: str, firma: tuple) -> tuple[str | None, list]:
+    """Ruta a usar (None si no hay ninguna copia valida) y las copias rechazadas."""
     rechazados = []
     for carpeta in CARPETAS:
         p = carpeta / nombre
         if not p.exists():
             continue
-        if carpeta != MOCK:
-            falta = faltantes(p, nombre)
-            if falta:
-                rechazados.append((str(p.relative_to(ROOT)), falta))
-                continue
+        falta = faltantes(p, nombre)
+        if falta:
+            rechazados.append((p.relative_to(ROOT).as_posix(), falta))
+            continue
         return str(p), rechazados
-    raise FileNotFoundError(
-        f"No encontre '{nombre}'. Corre 'python scripts/generar_mock.py' "
-        "para crear los datos de prueba."
-    )
+    return None, rechazados
 
 
 def _firma(nombre: str) -> tuple:
@@ -126,32 +159,39 @@ def _firma(nombre: str) -> tuple:
     return tuple((c / nombre).stat().st_mtime if (c / nombre).exists() else 0 for c in CARPETAS)
 
 
+def disponible(nombre: str) -> bool:
+    return _buscar(nombre, _firma(nombre))[0] is not None
+
+
 def ruta(nombre: str) -> Path:
-    return Path(_buscar(nombre, _firma(nombre))[0])
+    encontrado = _buscar(nombre, _firma(nombre))[0]
+    if encontrado is None:
+        raise FaltaArchivo(nombre)
+    return Path(encontrado)
 
 
 def rechazados(nombre: str) -> list:
     return _buscar(nombre, _firma(nombre))[1]
 
 
-def es_mock(nombre: str) -> bool:
-    return ruta(nombre).parent == MOCK
-
-
-def archivos_mock() -> list[str]:
-    return [n for n in CONTRATOS if es_mock(n)]
+def faltan() -> list[str]:
+    """Archivos del contrato que todavia no estan (lista vacia = todo real)."""
+    return [n for n in CONTRATOS if not disponible(n)]
 
 
 def estado_datos() -> pd.DataFrame:
-    """Tabla para la app: de donde sale cada archivo y si algun real fue rechazado."""
+    """Tabla para 'Ver datos tecnicos': archivo, de donde sale, quien lo entrega y su fuente."""
     filas = []
     for n in CONTRATOS:
-        p = ruta(n)
+        encontrado = _buscar(n, _firma(n))[0]
+        responsable, fuente = FUENTES.get(n, ("", ""))
         filas.append({
             "archivo": n,
-            "origen": "prueba" if p.parent == MOCK else "real",
-            "usando": str(p.relative_to(ROOT)),
-            "real rechazado (faltan columnas)": "; ".join(
+            "estado": "✅ real" if encontrado else f"❌ falta (lo entrega {responsable})",
+            "usando": Path(encontrado).relative_to(ROOT).as_posix() if encontrado else "—",
+            "responsable": responsable,
+            "fuente": fuente,
+            "copias rechazadas (faltan columnas)": "; ".join(
                 f"{r}: {', '.join(f)}" for r, f in rechazados(n)),
         })
     return pd.DataFrame(filas)
@@ -248,6 +288,7 @@ def reglas_zona(zona_id: int) -> list[dict]:
     tienen zona_id null y las que apuntan a una zona que no existe en el mapa
     (por ejemplo, si la numeracion de reglas.json no coincide con la de P3).
     """
-    validas = set(tabla_zonas()["zona_id"].dropna().astype(int))
+    validas = (set(tabla_zonas()["zona_id"].dropna().astype(int))
+               if disponible("zonas_daule.geojson") else set())
     return [r for r in reglas()
             if r["zona_id"] is None or r["zona_id"] == zona_id or r["zona_id"] not in validas]

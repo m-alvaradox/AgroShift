@@ -1,4 +1,4 @@
-"""Mi finca: frase resumen, 3 semaforos, el año mes a mes y acceso al juego."""
+"""Mi finca: frase resumen, 3 semaforos, el año mes a mes, el mapa y acceso al juego."""
 from datetime import date
 
 import streamlit as st
@@ -11,35 +11,39 @@ tipo = ui.tipo_zona(znombre)
 esc = ui.escenario_actual()
 hoy = date.today().month - 1
 
-clim = carga.climatologia()
-serie = ui.serie_zona(zid)
-factor = juego.factor_lluvia(carga.lluvia_imerg(), esc)
-
-# Que datos son reales y cuales todavia de prueba
-clima_real = not carga.es_mock("climatologia_daule.csv")
-anio_real = esc == "normal" or not carga.es_mock("lluvia_imerg_daule.csv")
-satelite_real = not carga.es_mock("series_zonas.csv")
+hay_clima = carga.disponible("climatologia_daule.csv")
+hay_satelite = carga.disponible("series_zonas.csv")
+clim = carga.climatologia() if hay_clima else None
+serie = ui.serie_zona(zid) if hay_satelite else ui.serie_vacia()
+imerg = carga.lluvia_imerg() if carga.disponible("lluvia_imerg_daule.csv") else None
+factor = juego.factor_lluvia(imerg, esc)
 
 st.title(f"{ui.icono_zona(znombre)} Mi finca")
-ui.html(f'<div class="resumen">{juego.frase_finca(tipo, esc, clim)}</div>')
+if clim is not None:
+    ui.html(f'<div class="resumen">{juego.frase_finca(tipo, esc, clim)}</div>')
 
 izq, der = st.columns(2, gap="large")
 
 with izq:
     st.subheader("¿Cómo está tu finca?")
-    ui.html(ui.semaforo("Agua", "💧", juego.semaforo_agua(clim, factor), clima_real and anio_real))
-    ui.html(ui.semaforo("Suelo", "🌱", juego.semaforo_suelo(serie), satelite_real))
+    if not ui.falta("climatologia_daule.csv"):
+        if esc != "normal" and imerg is None:
+            ui.falta("lluvia_imerg_daule.csv")
+        ui.html(ui.semaforo("Agua", "💧", juego.semaforo_agua(clim, factor), True))
+    if not ui.falta("series_zonas.csv"):
+        ui.html(ui.semaforo("Suelo", "🌱", juego.semaforo_suelo(serie), True))
     ui.html(ui.semaforo("Riesgo de inundación", "🌊", juego.semaforo_inundacion(tipo, esc, serie),
-                        satelite_real))
+                        hay_satelite))
 
 with der:
     st.subheader("Tu año, mes a mes")
-    celdas = "".join(
-        f'<div class="mes12 {m["tipo"]}{" hoy" if i == hoy else ""}"><span>{m["icono"]}</span>{m["mes"]}</div>'
-        for i, m in enumerate(juego.meses_12(clim)))
-    ui.html(f'<div class="meses12">{celdas}</div>'
-            '<div class="leyenda"><span>🌧️ Llueve fuerte</span><span>🌦️ Algo de lluvia</span>'
-            f'<span>☀️ Seco</span></div>{ui.etiqueta_fuente(clima_real)}')
+    if not ui.falta("climatologia_daule.csv"):
+        celdas = "".join(
+            f'<div class="mes12 {m["tipo"]}{" hoy" if i == hoy else ""}"><span>{m["icono"]}</span>{m["mes"]}</div>'
+            for i, m in enumerate(juego.meses_12(clim)))
+        ui.html(f'<div class="meses12">{celdas}</div>'
+                '<div class="leyenda"><span>🌧️ Llueve fuerte</span><span>🌦️ Algo de lluvia</span>'
+                f'<span>☀️ Seco</span></div>{ui.etiqueta_fuente(True)}')
 
     st.write("")
     with st.container(key="cta_jugar"):
@@ -49,13 +53,12 @@ with der:
 
 # --- Mapa de las zonas (siempre visible) -----------------------------------------------------
 st.subheader("🗺️ Tu zona en el mapa")
-# returned_objects=[]: mover o tocar el mapa no recarga la pagina
-st_folium(mapa.construir(zid), height=520, use_container_width=True, returned_objects=[],
-          key="mapa_finca")
-st.caption(f"Resaltada: {ui.etiqueta_zona(znombre)}. Toca una zona para ver sus datos. Con el "
-           "botón de capas (arriba a la derecha) puedes ver la elevación o la pendiente.")
+if not ui.falta("zonas_daule.geojson"):
+    # returned_objects=[]: mover o tocar el mapa no recarga la pagina
+    st_folium(mapa.construir(zid), height=520, use_container_width=True, returned_objects=[],
+              key="mapa_finca")
+    st.caption(f"Resaltada: {ui.etiqueta_zona(znombre)}. Toca una zona para ver sus datos. Con el "
+               "botón de capas (arriba a la derecha) puedes ver la elevación o la pendiente.")
 
 # --- Pie --------------------------------------------------------------------------------------
-if carga.archivos_mock():
-    st.caption("🧪 Algunos datos todavía son de ejemplo mientras el equipo termina los reales.")
-st.page_link("vistas/clima.py", label="Ver datos técnicos", icon="🔬")
+st.page_link("vistas/clima.py", label="Ver datos técnicos: de dónde sale cada dato", icon="🔬")

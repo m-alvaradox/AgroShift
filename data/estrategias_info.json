@@ -1,0 +1,71 @@
+[
+  {
+    "estrategia": "A",
+    "nombre": "Continuidad de arroz",
+    "secuencia": "Arroz → Arroz",
+    "descripcion": "Arroz en la época lluviosa seguido de arroz en la época seca. Es la práctica de referencia arroz-arroz.",
+    "evidencia": [
+      "Práctica de referencia arroz-arroz definida para el piloto de Daule (P4, src/reglas.py).",
+      "Balance de agua FAO-56 con NASA POWER e IMERG: es la estrategia con mayor déficit de agua en todos los escenarios (P1, docs/INFORME_moduloP1.md)."
+    ],
+    "beneficios": [
+      "Es la práctica conocida en la zona: no exige cambiar de cultivo ni de semilla.",
+      "El arroz es el único de los tres cultivos del catálogo que se siembra bajo inundación (P4, data/cultivos.csv)."
+    ],
+    "vacios": [
+      "Agua real de saturación, lámina y percolación del arroz en cada lote (FAO, Irrigation Water Needs, cap. 4; regla AGR-005).",
+      "Validación local del ciclo de 115 días y de los Kc del arroz (INIAP, FAO-56)."
+    ],
+    "riesgos": [
+      "Repetir arroz mantiene malezas, plagas y enfermedades (regla AGR-001).",
+      "Es la que más riego necesita en la época seca."
+    ]
+  },
+  {
+    "estrategia": "B",
+    "nombre": "Rotación arroz-soya",
+    "secuencia": "Arroz (lluvias) → Soya (seca)",
+    "descripcion": "Arroz en la época lluviosa seguido de soya en la época seca. La opción depende de disponer de drenaje adecuado.",
+    "evidencia": [
+      "INIAP, Mejoramiento de la soya en el Ecuador (1975): la soya se estableció en el litoral después del arroz, aprovechando la humedad remanente (regla AGR-002).",
+      "Balance de agua de P1: menor déficit que el arroz continuo (docs/INFORME_moduloP1.md).",
+      "Ciclo de 105–110 días de las variedades de soya del INIAP (P4, docs/fuentes_catalogo_cultivos.md)."
+    ],
+    "beneficios": [
+      "Necesita menos riego que el arroz continuo en la época seca.",
+      "Rota familias botánicas y rompe la repetición de arroz que favorece plagas (regla AGR-001).",
+      "Suma un segundo cultivo con su propio mercado."
+    ],
+    "vacios": [
+      "Variedad, semilla disponible y mercado de la soya en Daule (regla AGR-002).",
+      "Clasificación del drenaje de cada lote (regla AGR-003)."
+    ],
+    "riesgos": [
+      "La soya no tolera el encharcamiento: no recomendarla en lotes con drenaje deficiente o riesgo alto de anegamiento (reglas AGR-003 y AGR-004).",
+      "Conseguir semilla y comprador para la soya."
+    ]
+  },
+  {
+    "estrategia": "C",
+    "nombre": "Rotación diversificada de dos años",
+    "secuencia": "Año 1: Arroz → Soya | Año 2: Maíz duro → Soya",
+    "descripcion": "Año 1: arroz en época lluviosa y soya en época seca. Año 2: maíz duro amarillo en época lluviosa y soya en época seca.",
+    "evidencia": [
+      "Balance de agua de P1: la estrategia con menor déficit en todos los escenarios evaluados (docs/INFORME_moduloP1.md).",
+      "Ciclo de 120 días del maíz híbrido INIAP H-551, recomendado para el litoral (P4, docs/fuentes_catalogo_cultivos.md).",
+      "Criterios de rotación de familias botánicas y ruptura de ciclos de plagas (regla AGR-001)."
+    ],
+    "beneficios": [
+      "Es la que menos riego necesita de las tres.",
+      "Alterna tres cultivos: corta los ciclos de plagas y diversifica los ingresos."
+    ],
+    "vacios": [
+      "Rendimientos locales de maíz y soya en cada zona.",
+      "Validación de los Kc y de las fechas de siembra con datos de campo (P1 y P4)."
+    ],
+    "riesgos": [
+      "La soya y el maíz no toleran el anegamiento: revisar el drenaje antes de recomendarla (reglas AGR-003 y AGR-004).",
+      "Exige más planificación: dos años y tres cultivos."
+    ]
+  }
+]

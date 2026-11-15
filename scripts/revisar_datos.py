@@ -13,10 +13,10 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "app"))
-from utils.carga import CARPETAS, CONTRATOS, MOCK, faltantes  # noqa: E402
+from utils.carga import CARPETAS, CONTRATOS, FUENTES, faltantes  # noqa: E402
 
 PROC = ROOT / "data" / "processed"
-REALES = [c for c in CARPETAS if c != MOCK]  # app/data, data/processed, data
+REALES = CARPETAS  # app/data, data/processed, data (la app ya no usa data/mock/)
 
 print(f"\nArchivos en {PROC}:\n")
 for p in sorted(PROC.glob("*")):
@@ -31,7 +31,7 @@ print("\nContratos que usa la app (busca en app/data, data/processed y data):\n"
 for nombre, cols in CONTRATOS.items():
     copias = [c / nombre for c in REALES if (c / nombre).exists()]
     if not copias:
-        print(f"  [ falta ]  {nombre}")
+        print(f"  [ falta ]  {nombre}  -> lo entrega {FUENTES.get(nombre, ('el equipo',))[0]}")
         continue
     for p in copias:
         falta = faltantes(p, nombre)
@@ -39,3 +39,5 @@ for nombre, cols in CONTRATOS.items():
         detalle = "" if not falta else f"  -> le faltan: {', '.join(falta)}"
         print(f"  {estado}  {p.relative_to(ROOT).as_posix()}{detalle}")
 print()
+usados = [n for n in CONTRATOS if any(not faltantes(c / n, n) for c in REALES if (c / n).exists())]
+print(f"Archivos reales que cumplen el contrato: {len(usados)} de {len(CONTRATOS)}\n")

@@ -10,11 +10,14 @@ tipo = ui.tipo_zona(znombre)
 esc = ui.escenario_actual()
 hoy = date.today().month - 1
 
-comp = ui.ranking(zid, esc)
-recomendada = comp["estrategia"].iloc[0] if not comp.empty else "B"
-elegida = st.session_state.get("estrategia_elegida") or recomendada
+st.title("📅 Mi plan")
+recomendada = None
+if not ui.falta("estrategias.csv"):  # sin estrategias.csv no hay recomendacion, pero si el plan
+    comp = ui.ranking(zid, esc)
+    recomendada = comp["estrategia"].iloc[0] if not comp.empty else None
+elegida = st.session_state.get("estrategia_elegida") or recomendada or "A"
 if elegida not in juego.ATAJOS:
-    elegida = recomendada
+    elegida = recomendada or "A"
 
 
 def elegir(k):
@@ -22,7 +25,6 @@ def elegir(k):
 
 
 atajo = juego.ATAJOS[elegida]
-st.title("📅 Mi plan")
 ui.html(f'<p><b>{elegida} · {atajo["nombre"]}</b>{" ⭐ recomendado" if elegida == recomendada else ""}'
         f'<br>{ui.mini_cartas(atajo["secuencia"])}</p>')
 
@@ -37,7 +39,7 @@ for i, m in enumerate(juego.plan_12_meses(atajo["secuencia"])):
     filas.append(f'<div class="plan-mes{" hoy" if i == hoy else ""}"><div class="ico">{m["icono"]}</div>'
                  f'<div class="mes">{m["mes"]}</div><div><div class="etapa">{m["etapa"]} · {m["cultivo"]}'
                  f'{" · este mes" if i == hoy else ""}</div><div class="acc">{m["accion"]}</div></div></div>')
-ui.html(f'<div class="plan-lista">{"".join(filas)}</div>{ui.etiqueta_fuente(False)}')
+ui.html(f'<div class="plan-lista">{"".join(filas)}</div>{ui.etiqueta_fuente(False, "📋 Calendario general por temporada")}')
 
 st.subheader("3 consejos para ti")
 for c in juego.consejos(tipo, esc, atajo["secuencia"]):

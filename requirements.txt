@@ -14,3 +14,5 @@ shapely>=2.0             # simplificar las zonas del mapa (app/utils/mapa.py)
 requests>=2.31
 matplotlib>=3.8
 rasterio>=1.3.10
+pillow>=10.0             # PNG de las capas del mapa (scripts/preparar_capas.py)
+earthengine-api>=1.0     # Landsat en Earth Engine (scripts/landsat_gee.py, P2)

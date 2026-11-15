@@ -1,9 +1,10 @@
 """
-Agroshift - Datos de prueba (mock) para construir la app sin esperar al equipo.
+Agroshift - Datos de prueba (mock) SOLO para pruebas automaticas.
 
 Crea en data/mock/ los mismos archivos de los contratos de datos, con las
-mismas columnas, pero con valores SIMULADOS. La app los usa solo cuando
-todavia no existe el archivo real en data/processed/ (o en app/data/).
+mismas columnas, pero con valores SIMULADOS. La app ya NO los lee (solo usa
+datos reales: app/data, data/processed y data). Sirven para probar la logica
+sin depender de los archivos del equipo, apuntando las pruebas a data/mock/.
 
 Uso (desde la raiz del proyecto):
     python scripts/generar_mock.py

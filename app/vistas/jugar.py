@@ -45,13 +45,19 @@ def volver():
 # --- Resultado ---------------------------------------------------------------------------------
 if ss["jugado"] and None not in ss["casillas"]:
     casillas = ss["casillas"]
-    atajo = juego.atajo_de(casillas)
-    notas = juego.notas_estrategia(carga.estrategias(), atajo, zid, esc) if atajo else None
-    res = juego.jugar(casillas, tipo, esc, clim=carga.climatologia(), cult=carga.cultivos(),
-                      factor=juego.factor_lluvia(carga.lluvia_imerg(), esc), notas=notas)
-    real = res["con_notas"] and not carga.es_mock("estrategias.csv")
-
     st.title("🌾 Así te fue en el año")
+    if ui.falta("climatologia_daule.csv"):
+        st.button("🔁 Volver a armar", on_click=volver, key="btn_rearmar", width="stretch")
+        st.stop()
+    atajo = juego.atajo_de(casillas)
+    hay_notas = atajo and carga.disponible("estrategias.csv")
+    notas = juego.notas_estrategia(carga.estrategias(), atajo, zid, esc) if hay_notas else None
+    cult = carga.cultivos() if carga.disponible("cultivos.csv") else None
+    imerg = carga.lluvia_imerg() if carga.disponible("lluvia_imerg_daule.csv") else None
+    res = juego.jugar(casillas, tipo, esc, clim=carga.climatologia(), cult=cult,
+                      factor=juego.factor_lluvia(imerg, esc), notas=notas)
+    real = res["con_notas"]
+
     ui.html(f'<p>{ui.mini_cartas(casillas)}</p>')
     izq, der = st.columns(2, gap="large")
     with izq:
@@ -60,12 +66,16 @@ if ss["jugado"] and None not in ss["casillas"]:
         if res["logro"]:
             ui.html(f'<div class="logro">🏅 Logro: {res["logro"]}</div>')
     with der:
-        ui.html(ui.tres_barras(res["barras"]) + ui.etiqueta_fuente(real))
+        ui.html(ui.tres_barras(res["barras"]) + ui.etiqueta_fuente(real, "🧮 Estimación del juego"))
     st.subheader("Lo que pasó en el año")
     for e in res["eventos"]:
         ui.html(f'<div class="evento {e["tipo"]}"><b>{e["meses"]}:</b> {e["texto"]}</div>')
-    if not real:
-        st.caption("Simulación de ejemplo: los números se ajustarán con los datos del equipo.")
+    if real:
+        st.caption("Las barras salen del balance de agua FAO-56 y de las reglas de P4 "
+                   "(estrategias.csv) para tu zona y tipo de año.")
+    else:
+        st.caption("Esta combinación no es uno de los planes A, B o C: las barras son una "
+                   "estimación del juego con la lluvia y los cultivos reales.")
 
     c1, c2 = st.columns(2)
     c1.button("🔁 Volver a armar", on_click=volver, key="btn_rearmar", width="stretch")

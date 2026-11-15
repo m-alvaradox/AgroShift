@@ -8,7 +8,7 @@ datos. No usan Streamlit, asi se pueden probar solas:
     juego.jugar(["Arroz", "Soya", "Arroz"], "baja", "nino", clim=clim)
 
 Los valores que todavia no salen de los datos del equipo estan marcados con
-"# TODO: reemplazar con datos reales" y la app muestra "Simulacion de ejemplo".
+"# TODO: reemplazar con datos reales" y la app muestra "Estimación de AgroShift".
 """
 from __future__ import annotations
 
@@ -71,8 +71,18 @@ def atajo_de(casillas: list) -> str | None:
 # --- Datos que salen de los archivos ------------------------------------------------
 
 def factor_lluvia(imerg: pd.DataFrame, escenario: str) -> float:
-    """Cuanto llueve en un año El Niño o La Niña frente a uno normal (1 = igual)."""
+    """
+    Cuanto llueve en un año muy lluvioso (nino) o seco (nina) frente a uno normal (1 = igual).
+    Si la serie trae la lluvia de cada temporada (diciembre a mayo), compara esas temporadas;
+    si no, compara la lluvia de cada año calendario.
+    """
     if escenario == "normal" or imerg is None or imerg.empty:
+        return 1.0
+    if {"temporada", "lluvia_temporada_mm"} <= set(imerg.columns):
+        t = imerg.dropna(subset=["lluvia_temporada_mm"]).drop_duplicates("temporada")
+        prom = t.groupby("enso")["lluvia_temporada_mm"].mean()
+        if escenario in prom.index and "neutro" in prom.index and prom["neutro"] > 0:
+            return float(prom[escenario] / prom["neutro"])
         return 1.0
     anual = (imerg.assign(anio=pd.to_datetime(imerg["fecha"]).dt.year)
              .groupby(["anio", "enso"], as_index=False)["lluvia_mm"].sum())
@@ -161,12 +171,12 @@ def simular(casillas: list[str], zona_tipo: str, escenario: str, *, clim: pd.Dat
             continue
         if i == 0 and zona_tipo == "baja" and escenario == "nino" and c != "Arroz":
             exito[0] = 0.0
-            evento(0, "malo", f"llegó El Niño y se inundó tu {c.lower()}.", 1)
+            evento(0, "malo", f"llovió muchísimo y se inundó tu {c.lower()}.", 1)
         elif i == 0 and zona_tipo == "baja" and not tolera.get(c, False):
             exito[0] = 0.6
             evento(0, "malo", f"el terreno se encharcó y tu {c.lower()} sufrió.", 1)
         elif i == 0 and escenario == "nino" and c == "Arroz":
-            evento(0, "info", "llegó El Niño con mucha lluvia y tu arroz aguantó el agua.", 2)
+            evento(0, "info", "fue un año muy lluvioso y tu arroz aguantó el agua.", 2)
         if i > 0 and c == "Arroz" and escenario == "nina" and zona_tipo != "baja":
             exito[i] = 0.7
             evento(i, "malo", "llovió poco y el arroz pidió mucho riego.", 1)
@@ -354,8 +364,8 @@ def consejos(zona_tipo: str, escenario: str, secuencia: list[str]) -> list[str]:
         "transicion": "Haz zanjas para sacar el agua cuando llueva fuerte varios días.",
     }
     por_anio = {
-        "nino": "Año de El Niño: limpia canales y zanjas antes de enero.",
-        "nina": "Año de La Niña: llueve poco, prefiere cultivos que piden poca agua como la soya.",
+        "nino": "Año muy lluvioso: limpia canales y zanjas antes de enero.",
+        "nina": "Año seco: llueve poco, prefiere cultivos que piden poca agua como la soya.",
         "normal": "Compra semilla buena antes de cada siembra y guarda el recibo.",
     }
     if "Soya" in secuencia:
@@ -372,11 +382,11 @@ def consejos(zona_tipo: str, escenario: str, secuencia: list[str]) -> list[str]:
 PREGUNTAS = {
     "siembro": "¿Qué siembro?",
     "lluvia": "¿Cómo viene la lluvia?",
-    "nino": "Alerta El Niño",
+    "nino": "¿Y si llueve mucho?",
     "plan": "Mi plan",
 }
 ALERTA_EJEMPLO = "⚠️ Se viene una semana muy lluviosa. No siembres en zona baja hasta el lunes."
-NOMBRE_ANIO = {"normal": "año normal", "nino": "año de El Niño", "nina": "año de La Niña"}
+NOMBRE_ANIO = {"normal": "año normal", "nino": "año muy lluvioso", "nina": "año seco"}
 
 
 def respuesta(clave: str, ctx: dict) -> str:
@@ -397,7 +407,8 @@ def respuesta(clave: str, ctx: dict) -> str:
             consejo = "Tu zona se puede inundar: en lluvias siembra solo arroz y limpia los canales."
         else:
             consejo = "Tu zona no suele inundarse, pero limpia las zanjas antes de enero."
-        aviso = "Elegiste año de El Niño." if ctx["escenario"] == "nino" else "Si llega El Niño, lloverá mucho de enero a abril."
+        aviso = ("Elegiste año muy lluvioso." if ctx["escenario"] == "nino"
+                 else "Si viene un año muy lluvioso, lloverá mucho de enero a abril.")
         return f"{aviso} {consejo}"
     if clave == "plan":
         return f"En {ctx['mes']}: {ctx['accion']} Mira el plan completo en «Mi plan»."

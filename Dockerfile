@@ -3,7 +3,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-# Si no hay datos reales todavia, crea los de prueba
-RUN python scripts/generar_mock.py
+# La app usa solo datos reales (app/data, data/processed y data), que van en el repo
 EXPOSE 8501
 CMD ["streamlit", "run", "app/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]

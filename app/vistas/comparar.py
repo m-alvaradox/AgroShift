@@ -20,9 +20,11 @@ st.pills("Me importa más:", options=list(logica.CRITERIOS), selection_mode="mul
          default=st.session_state.get("prio_guardadas", []), on_change=guardar_prioridades,
          format_func=lambda c: f"{ICONO_CRIT[c]} {logica.CRITERIOS[c]}")
 
+if ui.falta("estrategias.csv"):
+    st.stop()
 comp = ui.ranking(zid, esc)
-info = carga.estrategias_info()
-real = not carga.es_mock("estrategias.csv")
+info = {} if ui.falta("estrategias_info.json") else carga.estrategias_info()
+real = True
 if comp.empty:
     st.info("Todavía no hay planes para esta zona y este año.", icon="ℹ️")
     st.stop()

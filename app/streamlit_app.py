@@ -43,18 +43,25 @@ with st.container(key="nav", horizontal=True, wrap=False, gap="small"):
             st.page_link(p, label=p.title, icon=p.icon, width="stretch")
 
 # --- Zona y tipo de año (persisten entre paginas) -------------------------------------------
-tabla = carga.tabla_zonas().sort_values("zona_id")
-nombres = dict(zip(tabla["zona_id"].astype(int), tabla["nombre_comun"]))
-if st.session_state.get("zona_id") not in nombres:
-    st.session_state["zona_id"] = ui.zona_inicial(tabla)  # la zona baja, buscada por nombre
+hay_zonas = carga.disponible("zonas_daule.geojson")
+nombres = {}
+if hay_zonas:
+    tabla = carga.tabla_zonas().sort_values("zona_id")
+    nombres = dict(zip(tabla["zona_id"].astype(int), tabla["nombre_comun"]))
+    if st.session_state.get("zona_id") not in nombres:
+        st.session_state["zona_id"] = ui.zona_inicial(tabla)  # la zona baja, buscada por nombre
 if st.session_state.get("escenario") not in ui.ETIQUETA_ESC:
     st.session_state["escenario"] = "normal"
 
 with st.container(key="selector"):
     col_zona, col_anio = st.columns([3, 2])
-    col_zona.segmented_control(
-        "¿Dónde está tu terreno?", options=list(nombres), key="zona_id", required=True,
-        format_func=lambda z: ui.etiqueta_zona(nombres[z]), width="stretch", wrap=True)
+    if hay_zonas:
+        col_zona.segmented_control(
+            "¿Dónde está tu terreno?", options=list(nombres), key="zona_id", required=True,
+            format_func=lambda z: ui.etiqueta_zona(nombres[z]), width="stretch", wrap=True)
+    else:
+        with col_zona:
+            ui.falta("zonas_daule.geojson")
     col_anio.segmented_control(
         "¿Cómo viene el año?", options=list(ui.ETIQUETA_ESC), key="escenario", required=True,
         format_func=lambda e: ui.ETIQUETA_ESC[e], width="stretch", wrap=True)

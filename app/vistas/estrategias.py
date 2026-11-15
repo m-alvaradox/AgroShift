@@ -8,7 +8,9 @@ zid, znombre = ui.zona_actual()
 esc = ui.escenario_actual()
 
 st.title("🌱 Compara tus opciones")
-ui.aviso_datos()
+ui.origen_datos()
+if ui.falta("estrategias.csv", "estrategias_info.json"):
+    st.stop()
 
 # --- Prioridades (se guardan para las otras paginas) --------------------------------------
 ICONO_CRIT = {"nota_agua": "💧", "nota_suelo": "🪱", "nota_plagas": "🐛", "nota_ingresos": "💵"}
@@ -26,8 +28,8 @@ pesos = ui.pesos_actuales()
 
 est = carga.estrategias()
 info = carga.estrategias_info()
-clim = carga.climatologia()
-cult = carga.cultivos()
+clim = carga.climatologia() if carga.disponible("climatologia_daule.csv") else None
+cult = carga.cultivos() if carga.disponible("cultivos.csv") else None
 comp = logica.comparar(est, zid, esc, pesos)
 agua_max = float(comp["agua_m3_ha"].max())
 base = comp[comp["estrategia"] == "A"]
@@ -57,9 +59,12 @@ for i, fila in comp.iterrows():
                 texto_agua += f" · {dif:.0f} % menos que arroz todo el año" if dif > 0 else ""
             st.markdown(f'<div class="gotas">{"💧" * gotas}</div>{texto_agua}', unsafe_allow_html=True)
 
-        plan = logica.plan(fila["estrategia"], clim, cult)
-        filas = [(f"Año {k + 1}" if len(plan) > 1 else "Su año", m) for k, m in enumerate(plan)]
-        ui.franja_anual(clim, filas)
+        if clim is not None and cult is not None:
+            plan = logica.plan(fila["estrategia"], clim, cult)
+            filas = [(f"Año {k + 1}" if len(plan) > 1 else "Su año", m) for k, m in enumerate(plan)]
+            ui.franja_anual(clim, filas)
+        else:
+            ui.falta("climatologia_daule.csv", "cultivos.csv")
 
         cols = st.columns(4)
         for col, (c, nombre) in zip(cols, logica.CRITERIOS.items()):
@@ -79,7 +84,8 @@ fig.update_layout(barmode="group", height=360, margin=dict(l=10, r=10, t=10, b=1
                   legend=dict(orientation="h", y=-0.25),
                   font=dict(family="Atkinson Hyperlegible, sans-serif", size=14))
 st.plotly_chart(fig, width="stretch")
-st.caption("En años de El Niño llueve más y hace falta menos riego, pero la zona baja se puede inundar.")
-ui.fuente("agua con el método FAO-56 y NASA POWER; notas de suelo, plagas e ingresos del catálogo agronómico.")
+st.caption("En un año muy lluvioso hace falta menos riego, pero la zona baja se puede inundar.")
+ui.fuente("agua de riego con el método FAO-56 (NASA POWER y los años de GPM IMERG); notas de "
+          "suelo, plagas e ingresos con las reglas de P4 (scripts/calcular_estrategias.py).")
 
 st.page_link("vistas/recomendacion.py", label="Ver por qué te recomendamos la primera", icon="✅")

@@ -10,17 +10,24 @@ zid, znombre = ui.zona_actual()
 tipo = ui.tipo_zona(znombre)
 esc = ui.escenario_actual()
 hoy = date.today().month - 1
+st.title("💬 Asistente")
+if ui.falta("climatologia_daule.csv"):  # sin clima el asistente no puede responder
+    st.stop()
 clim = carga.climatologia()
+imerg = carga.lluvia_imerg() if carga.disponible("lluvia_imerg_daule.csv") else None
 
-comp = ui.ranking(zid, esc)
-k = st.session_state.get("estrategia_elegida") or (comp["estrategia"].iloc[0] if not comp.empty else "B")
-atajo = juego.ATAJOS.get(k, juego.ATAJOS["B"])
+recomendada = None
+if carga.disponible("estrategias.csv"):
+    comp = ui.ranking(zid, esc)
+    recomendada = comp["estrategia"].iloc[0] if not comp.empty else None
+k = st.session_state.get("estrategia_elegida") or recomendada or "A"
+atajo = juego.ATAJOS.get(k, juego.ATAJOS["A"])
 mes_plan = juego.plan_12_meses(atajo["secuencia"])[hoy]
 ctx = {
     "zona": ui.corto_zona(znombre), "zona_tipo": tipo, "escenario": esc,
     "plan_nombre": atajo["nombre"], "secuencia": atajo["secuencia"],
     "lluvias": juego.lluvias_texto(clim),
-    "agua": juego.semaforo_agua(clim, juego.factor_lluvia(carga.lluvia_imerg(), esc)),
+    "agua": juego.semaforo_agua(clim, juego.factor_lluvia(imerg, esc)),
     "mes": mes_plan["mes_largo"], "accion": mes_plan["accion"],
 }
 
@@ -45,8 +52,6 @@ def preguntar(clave):
 def borrar():
     del ss["chat"]
 
-
-st.title("💬 Asistente")
 
 burbujas = "".join(
     f'<div class="burbuja {m["de"]}{" alerta" if m.get("alerta") else ""}">{escape(m["texto"])}'

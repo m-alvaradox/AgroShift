@@ -17,7 +17,9 @@ NEUTRO = "#EEF3EA"          # fondos suaves
 COLOR_ZONA = {"loma": "#B9863A", "ladera": "#7FA650", "baja": RIO, "transicion": "#8FB8D8"}
 COLOR_TIPO = {"lluvioso": RIO, "transicion": "#8FB8D8", "seco": SECA}
 COLOR_ESC = {"normal": "#7A869A", "nino": RIO, "nina": SECA}
-NOMBRE_ESC = {"normal": "Año normal", "nino": "Año El Niño", "nina": "Año La Niña"}
+# Escenarios: las claves nino/nina son las del contrato de datos, pero en la app se
+# muestran por la lluvia real de cada temporada (GPM IMERG), no por el indice ENSO.
+NOMBRE_ESC = {"normal": "Año normal", "nino": "Año muy lluvioso", "nina": "Año seco"}
 ICONO_ESC = {"normal": "🌤️", "nino": "🌧️", "nina": "☀️"}
 NOMBRE_TIPO = {"lluvioso": "Lluvias", "transicion": "Transición", "seco": "Seca"}
 CORTO_TIPO = {"lluvioso": "Lluvias", "transicion": "Cambio", "seco": "Seca"}
@@ -41,7 +43,12 @@ def zona_inicial(tabla) -> int:
     return int(tabla["zona_id"].iloc[0])
 
 
+ZONA_SIN_MAPA = (0, "Todo Daule")  # si todavia no estan las zonas de P3
+
+
 def zona_actual() -> tuple[int, str]:
+    if not carga.disponible("zonas_daule.geojson"):
+        return ZONA_SIN_MAPA
     tabla = carga.tabla_zonas()
     nombres = dict(zip(tabla["zona_id"].astype(int), tabla["nombre_comun"]))
     zid = st.session_state.get("zona_id")
@@ -98,7 +105,14 @@ def etiqueta_zona(nombre: str) -> str:
     return f"{ICONO_ZONA[t]} {ETIQUETA_ZONA.get(t, CORTO_ZONA[t])}"
 
 
-ETIQUETA_ESC = {"normal": "🌤️ Normal", "nino": "🌧️ El Niño", "nina": "☀️ La Niña"}
+ETIQUETA_ESC = {"normal": "🌤️ Normal", "nino": "🌧️ Muy lluvioso", "nina": "☀️ Seco"}
+
+
+def serie_vacia():
+    """Serie del satelite sin filas (con tipos correctos) para cuando falta series_zonas.csv."""
+    import pandas as pd
+    return pd.DataFrame({"fecha": pd.Series(dtype="datetime64[ns]"), "zona_id": pd.Series(dtype=int),
+                         **{k: pd.Series(dtype=float) for k in ("ndvi", "ndwi", "ndmi")}})
 
 
 def serie_zona(zid: int):
@@ -118,14 +132,49 @@ def html(texto: str):
 
 # --- Avisos ---------------------------------------------------------------------------
 
-def aviso_datos():
-    mock = carga.archivos_mock()
-    if mock:
-        with st.expander(f"🧪 Datos de prueba: {len(mock)} de {len(carga.CONTRATOS)} archivos "
-                         "todavía son simulados. Toca para ver cuáles."):
-            st.dataframe(carga.estado_datos(), hide_index=True, width="stretch")
-            st.caption("Si un archivo real aparece como rechazado, le faltan columnas del "
-                       "contrato. Mientras tanto, la app usa el de prueba.")
+def falta(*nombres: str) -> bool:
+    """
+    True (y muestra un aviso en esa seccion) si falta alguno de los archivos.
+    Uso:  if not ui.falta("estrategias.csv"): ...dibujar la seccion...
+    """
+    ausentes = [n for n in nombres if not carga.disponible(n)]
+    for n in ausentes:
+        st.warning(str(carga.FaltaArchivo(n)), icon="📭")
+    return bool(ausentes)
+
+
+def tipos_de_anio() -> dict:
+    """{'nino': ['2024-2025'], 'normal': [...], 'nina': [...]} segun la lluvia IMERG."""
+    if not carga.disponible("lluvia_imerg_daule.csv"):
+        return {}
+    s = carga.lluvia_imerg()
+    if "temporada" not in s:
+        return {}
+    s = s[s["enso"].isin(["nino", "neutro", "nina"])].drop_duplicates("temporada")
+    clave = {"nino": "nino", "neutro": "normal", "nina": "nina"}
+    return {clave[e]: sorted(s.loc[s["enso"] == e, "temporada"]) for e in ["nino", "neutro", "nina"]}
+
+
+def origen_datos(abierto: bool = False):
+    """Vista tecnica: de que archivo y de que fuente sale cada dato."""
+    faltan = carga.faltan()
+    total = len(carga.CONTRATOS)
+    titulo = (f"📂 De dónde sale cada dato ({total - len(faltan)} de {total} archivos reales"
+              + (f"; faltan {len(faltan)})" if faltan else ")"))
+    with st.expander(titulo, expanded=abierto):
+        st.dataframe(carga.estado_datos(), hide_index=True, width="stretch",
+                     column_config={"fuente": st.column_config.TextColumn(width="large")})
+        tipos = tipos_de_anio()
+        if tipos:
+            st.markdown(
+                "**Tipos de año.** Salen de la lluvia **GPM IMERG de la NASA** (serie de Mario, "
+                "2021–2026): se suma la lluvia de diciembre a mayo de cada temporada. La más "
+                "lluviosa es el *año muy lluvioso*, la más seca el *año seco* y las demás, el "
+                "*año normal*.\n\n"
+                + "\n".join(f"- {ICONO_ESC[k]} **{NOMBRE_ESC[k]}:** {', '.join(v)}"
+                            for k, v in tipos.items()))
+        st.caption("Si una copia aparece como rechazada, le faltan columnas del contrato y la app "
+                   "busca en la siguiente carpeta (app/data → data/processed → data).")
 
 
 def aviso_tecnico():
@@ -200,11 +249,11 @@ def tarjeta_accion(texto: str, mes: int):
 
 # --- Piezas del diseño tipo juego -----------------------------------------------------
 
-def etiqueta_fuente(real: bool) -> str:
-    """Etiqueta pequeña junto a los datos: satelite NASA o simulacion de ejemplo."""
+def etiqueta_fuente(real: bool, otra: str = "🧮 Estimación de AgroShift") -> str:
+    """Etiqueta pequeña junto a los datos: dato de la NASA o calculo propio de la app."""
     if real:
         return '<span class="tag nasa">🛰️ Dato de satélite NASA</span>'
-    return '<span class="tag sim">🧪 Simulación de ejemplo</span>'
+    return f'<span class="tag sim">{escape(otra)}</span>'
 
 
 def semaforo(titulo: str, icono: str, s: dict, real: bool) -> str:

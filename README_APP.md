@@ -4,7 +4,9 @@
 
 ```powershell
 pip install -r requirements.txt
-python scripts/generar_mock.py        # crea los datos de prueba en data/mock/
+python scripts/adaptar_datos.py         # clima, satélite e IMERG del equipo -> app/data/
+python scripts/calcular_estrategias.py  # estrategias.csv (FAO-56 + reglas de P4)
+python scripts/preparar_capas.py        # capas del mapa (elevación y pendiente)
 streamlit run app/streamlit_app.py
 ```
 
@@ -19,33 +21,38 @@ app/
 │   ├── comparar.py      # Comparar: planes A, B y C según lo que te importa
 │   ├── plan.py          # Mi plan: una acción por mes y 3 consejos
 │   ├── asistente.py     # Asistente: vista previa tipo WhatsApp (simulado)
-│   ├── clima.py         # Vista técnica: lluvia, evaporación y El Niño/La Niña
+│   ├── clima.py         # Vista técnica: de dónde sale cada dato, lluvia y tipos de año
 │   ├── zonas.py         # Vista técnica: series de satélite y calendario
 │   ├── estrategias.py   # Vista técnica: comparación detallada
 │   └── recomendacion.py # Vista técnica: ficha, evidencia y reglas
 └── utils/
-    ├── carga.py         # lee los archivos de los contratos (real primero, prueba después)
+    ├── carga.py         # lee los archivos de los contratos (solo datos reales)
+    ├── mapa.py          # mapa tipo QGIS de Mi finca
     ├── logica.py        # puntaje, recomendación y calendario (lógica de ejemplo)
     ├── juego.py         # reglas del juego, semáforos, plan y asistente (funciones puras)
     ├── estilo.py        # todo el CSS (colores, Nunito, celular y pantalla ancha)
     └── ui.py            # estado compartido y piezas HTML (semáforo, barras, cartas, plantita)
-scripts/generar_mock.py  # datos de prueba con las columnas de los contratos
+scripts/generar_mock.py  # datos simulados SOLO para pruebas automáticas (la app no los usa)
 ```
 
 La "Vista técnica" no sale en el menú: se abre con el enlace **Ver datos técnicos** al pie de Mi finca.
+Ahí está la tabla **De dónde sale cada dato** (archivo, responsable y fuente).
 Lo que todavía no sale de los datos está marcado con `# TODO: reemplazar con datos reales` en
-`utils/juego.py` y en pantalla dice **Simulación de ejemplo**.
+`utils/juego.py` y en pantalla dice **Estimación de AgroShift**.
 
 ## De dónde saca los datos
 
-Para cada archivo, la app usa el primero que encuentre:
+Solo datos reales. Para cada archivo, la app usa el primero que encuentre con las columnas del contrato:
 
-1. `app/data/`: datos reales que se suben con la app (para Coolify)
+1. `app/data/`: datos adaptados que se suben con la app (para Coolify)
 2. `data/processed/`: datos reales del equipo
 3. `data/`: `cultivos.csv`, `reglas.json` y `estrategias_info.json` de P4
-4. `data/mock/`: datos de prueba
 
-Mientras haya archivos de prueba, la app muestra un aviso amarillo.
+Si falta un archivo, la sección que lo usa muestra un aviso ("Falta X: lo entrega P1") y el
+resto de la página sigue funcionando.
+
+Los escenarios **Año muy lluvioso / normal / seco** salen de la lluvia GPM IMERG (serie de P1,
+2021–2026): la temporada de diciembre a mayo más lluviosa, la más seca y las demás.
 
 ## Cambios a los contratos (avisar al equipo)
 

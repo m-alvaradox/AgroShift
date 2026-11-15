@@ -4,11 +4,13 @@ Agroshift - Adaptador: convierte los archivos del equipo al formato de los contr
 Lee (sin modificarlos) los archivos que ya existen en data/processed/:
     clima_diario_daule.csv                   (P1: NASA POWER diario)
     indices_mensuales_daule_integrados.csv   (P2: indices Landsat por mes)
+    lluvia_imerg_daule.csv                   (P1: GPM IMERG mensual de Mario)
 
 Y escribe en app/data/ (la carpeta que la app lee primero):
     clima_mensual_daule.csv   fecha, anio, mes, lluvia_mm, et0_mm, balance_mm, t_media_c
     climatologia_daule.csv    mes, nombre_mes, lluvia_mm, et0_mm, balance_mm, tipo_mes, ...
     series_zonas.csv          fecha, zona_id, ndvi, ndwi, ndmi, lluvia_mm, ...
+    lluvia_imerg_daule.csv    fecha, lluvia_mm, enso, temporada, lluvia_temporada_mm
 
 Notas:
   - La ET0 se calcula con Hargreaves (FAO-56) usando la radiacion extraterrestre
@@ -17,6 +19,13 @@ Notas:
     (por ejemplo, El Nino de 2026) no distorsione el mes "tipico".
   - Mientras P3 no entregue las zonas, la serie de indices es de todo el
     recuadro y se guarda con zona_id = 0.
+  - Tipo de año (columna enso) con SOLO la lluvia IMERG de Mario: se suma la lluvia
+    de cada temporada de lluvias (diciembre a mayo) y se ordenan las temporadas.
+    La mas lluviosa = "nino" (Año muy lluvioso), la mas seca = "nina" (Año seco) y
+    las demas = "neutro" (Año normal). Cada mes pertenece al año agricola de
+    diciembre a noviembre ("2022-2023" = dic 2022 a nov 2023). Los meses de una
+    temporada incompleta quedan como "sin_dato". No se usa ningun indice ENSO
+    externo: los nombres nino/nina se mantienen solo por el contrato de datos.
 
 Uso (desde la raiz del proyecto):
     python scripts/adaptar_datos.py
@@ -102,6 +111,42 @@ def series(mensual: pd.DataFrame) -> pd.DataFrame:
     return s
 
 
+MESES_LLUVIA = [12, 1, 2, 3, 4, 5]   # temporada de lluvias: diciembre a mayo
+NOMBRE_TIPO_ANIO = {"nino": "Año muy lluvioso", "neutro": "Año normal", "nina": "Año seco"}
+
+
+def temporada_de(fecha: pd.Timestamp) -> str:
+    """Año agricola de diciembre a noviembre: dic 2022 a nov 2023 -> '2022-2023'."""
+    inicio = fecha.year if fecha.month == 12 else fecha.year - 1
+    return f"{inicio}-{inicio + 1}"
+
+
+def imerg() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Serie IMERG de Mario en el formato del contrato y el resumen por temporada."""
+    m = pd.read_csv(PROC / "lluvia_imerg_daule.csv")
+    m["fecha"] = pd.to_datetime(m["mes"] + "-01")
+    m["lluvia_mm"] = m["precipitacion_imerg_mm"].round(1)
+    completa = (m["serie_completa"].astype(str).str.lower() == "true"
+                if "serie_completa" in m else pd.Series(True, index=m.index))
+    m["temporada"] = m["fecha"].map(temporada_de)
+
+    lluvias = m[m["fecha"].dt.month.isin(MESES_LLUVIA)]
+    t = lluvias.assign(completo=completa[lluvias.index]).groupby("temporada").agg(
+        lluvia_temporada_mm=("precipitacion_imerg_mm", "sum"),
+        meses=("fecha", "count"), completos=("completo", "all")).reset_index()
+    t = t[(t["meses"] == len(MESES_LLUVIA)) & t["completos"]].copy()
+    t["lluvia_temporada_mm"] = t["lluvia_temporada_mm"].round(1)
+    t = t.sort_values("lluvia_temporada_mm", ascending=False).reset_index(drop=True)
+    t["enso"] = "neutro"
+    if len(t) >= 2:
+        t.loc[0, "enso"] = "nino"
+        t.loc[len(t) - 1, "enso"] = "nina"
+
+    m = m.merge(t[["temporada", "enso", "lluvia_temporada_mm"]], on="temporada", how="left")
+    m["enso"] = m["enso"].fillna("sin_dato")
+    return m[["fecha", "lluvia_mm", "enso", "temporada", "lluvia_temporada_mm"]], t
+
+
 def main() -> None:
     SALIDA.mkdir(parents=True, exist_ok=True)
     lat = latitud_centro()
@@ -111,6 +156,8 @@ def main() -> None:
     clim.to_csv(SALIDA / "climatologia_daule.csv", index=False)
     serie = series(mensual)
     serie.to_csv(SALIDA / "series_zonas.csv", index=False)
+    lluvia, temporadas = imerg()
+    lluvia.to_csv(SALIDA / "lluvia_imerg_daule.csv", index=False)
 
     print(f"Archivos adaptados en {SALIDA}:")
     print(f"  clima_mensual_daule.csv  {len(mensual)} meses "
@@ -119,9 +166,16 @@ def main() -> None:
           f"{int(clim['anios'].max())} anios por mes)")
     print(f"  series_zonas.csv         {len(serie)} meses, "
           f"{int(serie['ndvi'].isna().sum())} sin imagen por nubes")
+    print(f"  lluvia_imerg_daule.csv   {len(lluvia)} meses "
+          f"({lluvia['fecha'].min():%Y-%m} a {lluvia['fecha'].max():%Y-%m}), "
+          f"{int((lluvia['enso'] == 'sin_dato').sum())} sin temporada completa")
     print("\nMeses segun la climatologia:")
     for t in ["lluvioso", "transicion", "seco"]:
         print(f"  {t:<11} {', '.join(clim.loc[clim['tipo_mes'] == t, 'nombre_mes'])}")
+    print("\nTipo de año segun la lluvia IMERG de diciembre a mayo:")
+    for _, f in temporadas.iterrows():
+        print(f"  {f['temporada']}  {f['lluvia_temporada_mm']:7.1f} mm  -> {f['enso']:<6} "
+              f"({NOMBRE_TIPO_ANIO[f['enso']]})")
 
 
 if __name__ == "__main__":
