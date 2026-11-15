@@ -1,61 +1,82 @@
-"""Clima: patrones historicos y anios El Nino / La Nina."""
+"""Clima: cuando llueve, cuando falta agua y como cambia en anios El Nino y La Nina."""
 import plotly.graph_objects as go
 import streamlit as st
 
-from utils import carga, ui
+from utils import carga, logica, ui
 
-st.title("🌦️ Clima de Daule")
-st.markdown("Qué meses llueve más de lo que se evapora (sobra agua) y cuáles son secos (falta agua).")
+st.title("🌦️ Cuándo llueve en Daule")
 ui.aviso_datos()
 
 clim = carga.climatologia().sort_values("mes")
+mensual = carga.clima_mensual().sort_values("fecha")
 
-# --- Lluvia frente a evaporacion -------------------------------------------------
+
+def rango(tipo: str) -> str:
+    meses = [logica.MESES_LARGOS[m - 1] for m in clim.loc[clim["tipo_mes"] == tipo, "mes"]]
+    if not meses:
+        return ""
+    return meses[0] if len(meses) == 1 else f"{meses[0]} a {meses[-1]}"
+
+
+st.markdown(f"Llueve sobre todo de **{rango('lluvioso')}**. De **{rango('seco')}** falta agua: "
+            "se evapora más de lo que llueve, así que los cultivos necesitan riego o la humedad "
+            "que queda en el suelo.")
+
+# --- Lluvia frente a evaporacion en un anio tipico --------------------------------------------
 fig = go.Figure()
-fig.add_bar(x=clim["nombre_mes"], y=clim["lluvia_mm"], name="Lluvia",
+fig.add_bar(x=clim["nombre_mes"], y=clim["lluvia_mm"], name="Lluvia de un año típico",
             marker_color=[ui.COLOR_TIPO[t] for t in clim["tipo_mes"]],
             customdata=[ui.NOMBRE_TIPO[t] for t in clim["tipo_mes"]],
-            hovertemplate="%{x}: %{y:.0f} mm · %{customdata}<extra></extra>")
-fig.add_scatter(x=clim["nombre_mes"], y=clim["et0_mm"], name="Agua que se evapora (ET0)",
-                mode="lines+markers", line=dict(color="#333", width=2),
-                hovertemplate="%{x}: %{y:.0f} mm<extra></extra>")
-fig.update_layout(height=380, margin=dict(l=10, r=10, t=30, b=10), yaxis_title="mm por mes",
-                  legend=dict(orientation="h", y=1.12), plot_bgcolor="white")
+            hovertemplate="%{x}: llueven %{y:.0f} mm · %{customdata}<extra></extra>")
+fig.add_scatter(x=clim["nombre_mes"], y=clim["et0_mm"], name="Agua que se evapora",
+                mode="lines+markers", line=dict(color=ui.VERDE_ARROZAL, width=3),
+                hovertemplate="%{x}: se evaporan %{y:.0f} mm<extra></extra>")
+fig.update_layout(height=360, margin=dict(l=10, r=10, t=10, b=10), yaxis_title="milímetros por mes",
+                  legend=dict(orientation="h", y=-0.15), plot_bgcolor="white",
+                  font=dict(family="Atkinson Hyperlegible, sans-serif", size=14))
 st.plotly_chart(fig, width="stretch")
-ui.fuente("NASA POWER, promedio 1991–2025.")
+st.caption("Cuando la barra pasa la línea, sobra agua. Cuando queda por debajo, falta.")
+ui.fuente(f"NASA POWER, {mensual['anio'].min()}–{mensual['anio'].max()}.")
 
-cols = st.columns(3)
-for col, tipo in zip(cols, ["lluvioso", "transicion", "seco"]):
-    meses = clim.loc[clim["tipo_mes"] == tipo, "nombre_mes"].tolist()
-    col.markdown(f"**{ui.NOMBRE_TIPO[tipo]}**")
-    col.write(", ".join(meses) if meses else "—")
+# --- Este anio frente a lo normal ----------------------------------------------------------
+st.subheader("¿Cómo viene lloviendo?")
+ult = mensual.tail(24).copy()
+ult["tipico"] = ult["mes"].map(dict(zip(clim["mes"], clim["lluvia_mm"])))
+raro = (ult["lluvia_mm"] > 3 * ult["tipico"] + 50)
+fig2 = go.Figure()
+fig2.add_bar(x=ult["fecha"], y=ult["lluvia_mm"], name="Lo que llovió",
+             marker_color=[ui.RIESGO if r else ui.RIO for r in raro],
+             hovertemplate="%{x|%b %Y}: %{y:.0f} mm<extra></extra>")
+fig2.add_scatter(x=ult["fecha"], y=ult["tipico"], name="Lo normal para ese mes", mode="lines",
+                 line=dict(color="#333", dash="dot"))
+fig2.update_layout(height=320, margin=dict(l=10, r=10, t=10, b=10), yaxis_title="milímetros",
+                   legend=dict(orientation="h", y=-0.2), plot_bgcolor="white",
+                   font=dict(family="Atkinson Hyperlegible, sans-serif", size=14))
+st.plotly_chart(fig2, width="stretch")
+if raro.any():
+    meses_raros = ", ".join(f"{logica.MESES_LARGOS[f.month - 1]} {f.year}" for f in ult.loc[raro, "fecha"])
+    st.error(f"Llovió muchísimo más de lo normal en: {meses_raros}. "
+             "En la zona baja eso significa riesgo de inundación.", icon="🌧️")
 
-with st.expander("¿Cómo se clasifica cada mes?"):
-    st.markdown(
-        "- **Lluvioso:** llueve igual o más de lo que se evapora.\n"
-        "- **Seco:** llueve menos de la mitad de lo que se evapora.\n"
-        "- **Transición:** todo lo demás.\n\n"
-        f"**ET0:** {ui.GLOSARIO['ET0']}"
-    )
-
-# --- Anios El Nino y La Nina -----------------------------------------------------
-st.subheader("¿Cuánto cambia la lluvia en años El Niño y La Niña?")
+# --- Anios El Nino y La Nina ---------------------------------------------------------------
+st.subheader("¿Y en años de El Niño o La Niña?")
 imerg = carga.lluvia_imerg()
 anual = imerg.assign(anio=imerg["fecha"].dt.year).groupby(["anio", "enso"], as_index=False)["lluvia_mm"].sum()
-
-fig2 = go.Figure()
-for e in ["normal", "nino", "nina"]:
-    clave = "neutro" if e == "normal" else e
-    d = anual[anual["enso"] == clave]
-    fig2.add_bar(x=d["anio"], y=d["lluvia_mm"], name=ui.NOMBRE_ESC[e], marker_color=ui.COLOR_ESC[e],
-                 hovertemplate="%{x}: %{y:,.0f} mm<extra></extra>")
-fig2.update_layout(height=340, margin=dict(l=10, r=10, t=30, b=10), yaxis_title="mm por año",
-                   legend=dict(orientation="h", y=1.15), plot_bgcolor="white", bargap=0.15)
-st.plotly_chart(fig2, width="stretch")
-ui.fuente("GPM IMERG, lluvia mensual sumada por año.")
-
 prom = anual.groupby("enso")["lluvia_mm"].mean()
-if {"nino", "neutro"} <= set(prom.index):
-    extra = (prom["nino"] / prom["neutro"] - 1) * 100
-    st.info(f"En años El Niño llueve en promedio **{extra:.0f} % más** que en un año normal. "
-            "Esto aumenta el riesgo de inundación en la zona baja.", icon="🌧️")
+c1, c2, c3 = st.columns(3)
+for col, clave, esc in [(c1, "neutro", "normal"), (c2, "nino", "nino"), (c3, "nina", "nina")]:
+    if clave in prom.index:
+        delta = None
+        if clave != "neutro" and "neutro" in prom.index:
+            delta = f"{(prom[clave] / prom['neutro'] - 1) * 100:+.0f} % que un año normal"
+        col.metric(f"{ui.ICONO_ESC[esc]} {ui.NOMBRE_ESC[esc]}", f"{ui.num(prom[clave])} mm",
+                   delta=delta, delta_color="off")
+st.caption("Lluvia promedio en un año completo.")
+ui.fuente("GPM IMERG.")
+
+with st.expander("¿Cómo se decide si un mes es de lluvias o seco?"):
+    st.markdown(
+        "- **Lluvias:** llueve igual o más de lo que se evapora.\n"
+        "- **Seca:** llueve menos de la mitad de lo que se evapora.\n"
+        "- **Transición:** todo lo demás.\n\n"
+        f"{ui.GLOSARIO['ET0']}")

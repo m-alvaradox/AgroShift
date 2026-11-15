@@ -1,5 +1,4 @@
-"""Zonas y series: como se comporta cada zona mes a mes y calendario de siembra."""
-import pandas as pd
+"""Mi campo: como se ve el terreno desde el satelite y cuando conviene sembrar cada cultivo."""
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -7,62 +6,50 @@ from utils import carga, logica, ui
 
 zid, znombre = ui.zona_actual()
 
-st.title("🛰️ Zonas y series de tiempo")
-st.markdown(f"Cómo cambió **{znombre}** mes a mes en los últimos 5 años, visto desde el satélite.")
+st.title("🛰️ Tu campo visto desde el satélite")
 ui.aviso_datos()
 
 serie = carga.series()
 sz = serie[serie["zona_id"] == zid].sort_values("fecha")
+if sz.empty and (serie["zona_id"] == 0).any():
+    sz = serie[serie["zona_id"] == 0].sort_values("fecha")
+    st.info("Por ahora se muestra todo el recuadro de Daule. Cuando estén listas las zonas, "
+            "verás solo la tuya.", icon="ℹ️")
 
-# --- Indices en el tiempo --------------------------------------------------------
-indices = {"ndvi": ("NDVI · verdor", "#2E7D32"), "ndwi": ("NDWI · agua", "#3B82C4"),
-           "ndmi": ("NDMI · humedad", "#8E6BBF")}
-elegidos = st.multiselect("Índices a mostrar", list(indices), default=["ndvi", "ndwi"],
-                          format_func=lambda k: indices[k][0])
+# --- Que mirar ------------------------------------------------------------------------------
+opciones = {
+    "ndvi": ("🌱 Verdor", "#3E7D2F", "Más alto = cultivo más verde y sano. Cerca de 0 = suelo pelado."),
+    "ndwi": ("💧 Agua", ui.RIO, "Por encima de 0 = hay agua sobre el terreno o está inundado."),
+    "ndmi": ("🌿 Humedad", "#7A5FA8", "Más bajo = las plantas pueden estar pasando sed."),
+}
+ver = st.segmented_control("¿Qué quieres ver?", options=list(opciones), default="ndvi",
+                           format_func=lambda k: opciones[k][0], key="indice") or "ndvi"
+nombre, color, ayuda = opciones[ver]
+st.markdown(ayuda)
+
 fig = go.Figure()
-for k in elegidos:
-    fig.add_scatter(x=sz["fecha"], y=sz[k], name=indices[k][0], mode="lines",
-                    line=dict(color=indices[k][1], width=2))
-fig.add_hline(y=0, line=dict(color="#999", dash="dot"))
-fig.update_layout(height=360, margin=dict(l=10, r=10, t=30, b=10), plot_bgcolor="white",
-                  legend=dict(orientation="h", y=1.12), yaxis_title="valor del índice")
+fig.add_scatter(x=sz["fecha"], y=sz[ver], mode="lines+markers", name=nombre,
+                line=dict(color=color, width=3), marker=dict(size=6),
+                hovertemplate="%{x|%b %Y}: %{y:.2f}<extra></extra>")
+if ver == "ndwi":
+    fig.add_hline(y=0, line=dict(color=ui.RIESGO, dash="dot"),
+                  annotation_text="encima = agua", annotation_position="top left")
+fig.update_layout(height=340, margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor="white",
+                  showlegend=False, font=dict(family="Atkinson Hyperlegible, sans-serif", size=14))
 st.plotly_chart(fig, width="stretch")
-ui.fuente("Landsat 8 y 9, compuestos mensuales 2021–2025.")
+ui.fuente(f"Landsat 8 y 9, una imagen por mes ({sz['fecha'].min():%m/%Y} a {sz['fecha'].max():%m/%Y}). "
+          "Los cortes en la línea son meses con demasiadas nubes.")
 
-with st.expander("¿Qué significa cada índice?"):
-    for k in ["NDVI", "NDWI", "NDMI"]:
-        st.markdown(f"- **{k}:** {ui.GLOSARIO[k]}")
-
-# --- Meses con agua en superficie ------------------------------------------------
-st.subheader("¿En qué meses hubo agua en el terreno?")
-tabla = (sz.assign(anio=sz["fecha"].dt.year, mes=sz["fecha"].dt.month)
-           .pivot_table(index="anio", columns="mes", values="ndwi"))
-tabla.columns = [logica.MESES[m - 1] for m in tabla.columns]
-fig2 = go.Figure(go.Heatmap(
-    z=tabla.values, x=tabla.columns, y=tabla.index.astype(str),
-    colorscale=[[0, "#F4E6C8"], [0.5, "#F7F7F7"], [1, "#3B82C4"]], zmid=0,
-    colorbar=dict(title="NDWI"), hovertemplate="%{y} %{x}: %{z:.2f}<extra></extra>"))
-fig2.update_layout(height=260, margin=dict(l=10, r=10, t=10, b=10))
-st.plotly_chart(fig2, width="stretch")
-st.caption("Azul = hubo agua en la superficie (NDWI mayor que 0). Sirve para saber cuándo no sembrar soya o maíz.")
-
-# --- Calendario de siembra -------------------------------------------------------
-st.subheader("Calendario sugerido de siembra")
+# --- Cuando sembrar cada cultivo -------------------------------------------------------------
+st.subheader("¿Cuándo sembrar cada cultivo aquí?")
 cal, notas = logica.calendario(carga.climatologia(), carga.cultivos(), sz, znombre)
-colores = {"Siembra": "#2E7D32", "Crece": "#A5D6A7", "Cosecha": "#F2C14E", "Riesgo": "#E57373"}
-
-
-def pintar(v):
-    if v in colores:
-        texto = "white" if v in ("Siembra", "Riesgo") else "black"
-        return f"background-color: {colores[v]}; color: {texto}"
-    return ""
-
-
-st.dataframe(cal.style.map(pintar), width="stretch")
+filas = []
+for cultivo, fila in cal.iterrows():
+    meses = [({"cultivo": cultivo, "etapa": v} if v and v != "riesgo" else (v or None)) for v in fila]
+    filas.append((f"{ui.ICONO_CULTIVO.get(cultivo, '🌱')} {cultivo}", meses))
+ui.franja_anual(carga.climatologia(), filas, mes_hoy=logica.mes_actual())
 for n in notas:
     st.warning(n, icon="⚠️")
-st.caption("Lógica de ejemplo: la reemplazarán las reglas de P4 cuando estén listas.")
 
-with st.expander("Ver los datos de esta zona"):
+with st.expander("Ver los números de cada mes"):
     st.dataframe(sz.reset_index(drop=True), width="stretch", hide_index=True)

@@ -4,46 +4,47 @@ Agroshift - app principal (Streamlit).
 Correr desde la raiz del proyecto:
     streamlit run app/streamlit_app.py
 
-Este archivo arma el menu de paginas y la barra lateral (zona, escenario y
-prioridades). Como la barra lateral se dibuja en cada pagina, lo que elige el
-usuario se mantiene al cambiar de pagina.
+Este archivo arma el menu de arriba y la cabecera con la zona y el tipo de
+anio. Como se dibuja en cada pagina, lo que elige el usuario se mantiene.
 """
 import streamlit as st
 
-from utils import carga
-from utils.ui import NOMBRE_ESC
+from utils import carga, ui
 
-st.set_page_config(page_title="Agroshift", page_icon="🌱", layout="wide")
+st.set_page_config(page_title="Agroshift", page_icon="🌱", layout="wide",
+                   initial_sidebar_state="collapsed")
+ui.estilos()
 
 paginas = [
-    st.Page("vistas/inicio.py", title="Inicio", icon="🗺️", default=True),
+    st.Page("vistas/inicio.py", title="Mi finca", icon="🏡", default=True),
     st.Page("vistas/clima.py", title="Clima", icon="🌦️"),
-    st.Page("vistas/zonas.py", title="Zonas y series", icon="🛰️"),
-    st.Page("vistas/estrategias.py", title="Estrategias", icon="🌱"),
+    st.Page("vistas/zonas.py", title="Mi campo", icon="🛰️"),
+    st.Page("vistas/estrategias.py", title="Opciones", icon="🌱"),
     st.Page("vistas/recomendacion.py", title="Recomendación", icon="✅"),
 ]
-pg = st.navigation(paginas)
+pg = st.navigation(paginas, position="top")
 
-# --- Barra lateral compartida ----------------------------------------------------
-with st.sidebar:
-    st.markdown("## 🌱 Agroshift")
-    st.caption("Rotación de cultivos con datos de la NASA · Daule, Guayas")
+# --- Cabecera con los controles a la vista ---------------------------------------------
+st.markdown('<div class="marca"><b>🌱 Agroshift</b>'
+            '<span>Qué sembrar, cuándo y dónde · Daule, Guayas</span></div>',
+            unsafe_allow_html=True)
 
-    tabla = carga.tabla_zonas().sort_values("zona_id")
-    nombres = dict(zip(tabla["zona_id"], tabla["nombre_comun"]))
-    st.selectbox("Tu zona", options=list(nombres), format_func=nombres.get,
-                 key="zona_id", index=len(nombres) - 1)
-    st.radio("¿Qué tipo de año esperas?", options=list(NOMBRE_ESC),
-             format_func=NOMBRE_ESC.get, key="escenario")
+tabla = carga.tabla_zonas().sort_values("zona_id")
+nombres = dict(zip(tabla["zona_id"], tabla["nombre_comun"]))
+if "zona_id" not in st.session_state:
+    st.session_state["zona_id"] = int(tabla["zona_id"].iloc[-1])
+if "escenario" not in st.session_state:
+    st.session_state["escenario"] = "normal"
 
-    with st.expander("Tus prioridades", expanded=False):
-        st.caption("0 = no me importa · 5 = muy importante")
-        st.slider("Ahorrar agua", 0, 5, 3, key="p_agua")
-        st.slider("Mejorar el suelo", 0, 5, 3, key="p_suelo")
-        st.slider("Cortar plagas", 0, 5, 3, key="p_plagas")
-        st.slider("Ingresos", 0, 5, 3, key="p_ingresos")
-
-    st.divider()
-    st.caption("NASA Space Apps 2026 · Reto Field Shift")
+col_zona, col_anio = st.columns([3, 2])
+col_zona.segmented_control(
+    "¿Dónde está tu terreno?", options=list(nombres), key="zona_id",
+    format_func=lambda z: f"{ui.icono_zona(nombres[z])} {ui.corto_zona(nombres[z])}")
+col_anio.segmented_control(
+    "¿Cómo viene el año?", options=list(ui.NOMBRE_ESC), key="escenario",
+    format_func=lambda e: f"{ui.ICONO_ESC[e]} {ui.NOMBRE_ESC[e].replace('Año ', '').capitalize().replace('El niño', 'El Niño').replace('La niña', 'La Niña')}")
 
 pg.run()
+
+st.divider()
+st.caption("NASA Space Apps 2026 · Reto Field Shift · Datos de NASA POWER, Landsat, SRTM y GPM")
