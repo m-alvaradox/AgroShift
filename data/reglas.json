@@ -39,6 +39,11 @@
         "muy_deficiente",
         "malo",
         "muy_malo"
+      ],
+      "valores_aptos": [
+        "bueno",
+        "adecuado",
+        "bien_drenado"
       ]
     },
     "evidencia": "University of Minnesota Extension, Flooded soybean: describe los efectos del anegamiento en soya. Excellence in Breeding, Phenotyping for abiotic stress tolerance in maize: Waterlogging stress: documenta el efecto del anegamiento en maíz. Referencias complementarias; validar umbrales con P3 y un técnico de Daule.",
