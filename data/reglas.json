@@ -1,0 +1,74 @@
+[
+  {
+    "id": "AGR-001",
+    "texto_campo": "La estrategia A repite arroz en ciclos consecutivos. Debe mostrarse como continuidad de arroz, no como rotación diversificada, y acompañarse de monitoreo de malezas, plagas y enfermedades.",
+    "condicion": {
+      "tipo": "repeticion_consecutiva",
+      "cultivo": "arroz",
+      "min_repeticiones": 2,
+      "estado": "advertencia"
+    },
+    "evidencia": "Criterios de rotación de familias botánicas y ruptura de ciclos de plagas documentados en la documentación agronómica de AgroShift. La intensidad del riesgo debe validarse con un técnico local.",
+    "zona_id": null
+  },
+  {
+    "id": "AGR-002",
+    "texto_campo": "La soya puede considerarse como cultivo de rotación después del arroz en la época seca del litoral. Antes de recomendarla, verificar variedad, semilla disponible, mercado y condiciones de drenaje del lote.",
+    "condicion": {
+      "tipo": "cultivo_incluido",
+      "cultivos": [
+        "soya"
+      ],
+      "estado": "informacion"
+    },
+    "evidencia": "INIAP, Mejoramiento de la soya en el Ecuador (1975): documenta su establecimiento en el litoral después de arroz, algodón o maíz, aprovechando humedad remanente. Referencia histórica; no sustituye la validación de variedades y mercado actuales.",
+    "zona_id": null
+  },
+  {
+    "id": "AGR-003",
+    "texto_campo": "Las estrategias con soya o maíz requieren verificar el drenaje. Si el drenaje del lote está clasificado como deficiente o muy deficiente, marcar la estrategia para revisión técnica antes de recomendarla.",
+    "condicion": {
+      "tipo": "drenaje",
+      "campo": "drenaje",
+      "cultivos": [
+        "soya",
+        "maiz_duro_amarillo"
+      ],
+      "valores_no_aptos": [
+        "deficiente",
+        "muy_deficiente",
+        "malo",
+        "muy_malo"
+      ]
+    },
+    "evidencia": "University of Minnesota Extension, Flooded soybean: describe los efectos del anegamiento en soya. Excellence in Breeding, Phenotyping for abiotic stress tolerance in maize: Waterlogging stress: documenta el efecto del anegamiento en maíz. Referencias complementarias; validar umbrales con P3 y un técnico de Daule.",
+    "zona_id": null
+  },
+  {
+    "id": "AGR-004",
+    "texto_campo": "Si el lote tiene riesgo alto de anegamiento, no recomendar soya ni maíz sin una evaluación técnica específica de drenaje y duración del encharcamiento.",
+    "condicion": {
+      "tipo": "anegamiento",
+      "campo": "riesgo_anegamiento",
+      "cultivos": [
+        "soya",
+        "maiz_duro_amarillo"
+      ]
+    },
+    "evidencia": "University of Minnesota Extension, Flooded soybean; Excellence in Breeding, Waterlogging stress in maize. El riesgo debe proceder de la caracterización de zonas y no inferirse únicamente a partir de lluvia regional.",
+    "zona_id": null
+  },
+  {
+    "id": "AGR-005",
+    "texto_campo": "En arroz bajo inundación, el riego no equivale a ETc: el balance debe contemplar también saturación previa, percolación o filtración y establecimiento de la lámina de agua cuando esos datos estén disponibles.",
+    "condicion": {
+      "tipo": "cultivo_incluido",
+      "cultivos": [
+        "arroz"
+      ],
+      "estado": "nota_tecnica"
+    },
+    "evidencia": "FAO, Irrigation Water Needs, capítulo 4: distingue evapotranspiración del cultivo de necesidad de riego y describe componentes adicionales para arroz paddy. El módulo de agua debe entregar el riego como magnitud separada.",
+    "zona_id": null
+  }
+]
