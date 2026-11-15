@@ -395,7 +395,13 @@ def _evaluar_condicion(
         }
         if drenaje in valores_no_aptos:
             return "alerta"
-        return "condicion_favorable"
+        valores_aptos = {
+            _normalizar_etiqueta(valor)
+            for valor in condicion.get("valores_aptos", [])
+        }
+        if drenaje in valores_aptos:
+            return "condicion_favorable"
+        return "pendiente_validacion"
 
     if tipo == "anegamiento":
         afectados = set(condicion.get("cultivos", []))
@@ -408,9 +414,13 @@ def _evaluar_condicion(
             return "pendiente_validacion"
 
         if isinstance(riesgo, str):
-            riesgo = _normalizar_etiqueta(riesgo) in {
-                "true", "1", "si", "sí", "alto", "muy_alto"
-            }
+            riesgo_normalizado = _normalizar_etiqueta(riesgo)
+            if riesgo_normalizado in {"true", "1", "si", "sí", "alto", "muy_alto"}:
+                riesgo = True
+            elif riesgo_normalizado in {"false", "0", "no", "bajo", "sin_riesgo"}:
+                riesgo = False
+            else:
+                return "pendiente_validacion"
         return "alerta" if bool(riesgo) else "condicion_favorable"
 
     raise ValueError(f"Tipo de condición no soportado: {tipo!r}")
