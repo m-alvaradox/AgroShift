@@ -296,6 +296,33 @@ button[data-variant="pills"][aria-pressed="true"] p {{ color: #fff !important; }
 .estrellas {{ color: #C9A227; font-size: 1.35rem; letter-spacing: .08em; }}
 .gotas {{ font-size: 1.1rem; letter-spacing: .05em; }}
 
+/* ---------- Dashboard ---------- */
+.st-key-filtros_dash {{ background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
+                       padding: .6rem .9rem .8rem; margin-bottom: .4rem; }}
+.st-key-filtros_dash label p {{ font-weight: 800; color: #1B4D20; }}
+.kpis {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: .5rem 0 1rem; }}
+.kpi {{ background: #fff; border-radius: var(--radio); box-shadow: var(--sombra); padding: .85rem 1rem;
+       border-top: 6px solid var(--verde); min-width: 0; }}
+.kpi.azul {{ border-top-color: var(--azul); }}
+.kpi.amarillo {{ border-top-color: var(--amarillo); }}
+.kpi.marron {{ border-top-color: var(--marron); }}
+.kpi-ico {{ font-size: 1.6rem; line-height: 1; }}
+.kpi-tit {{ font-size: .9rem; font-weight: 800; color: #5B6B5E; margin-top: .35rem; }}
+.kpi-num {{ font-size: 1.9rem; font-weight: 900; color: #1B4D20; line-height: 1.15; overflow-wrap: anywhere; }}
+.kpi-num small {{ font-size: 1rem; font-weight: 700; color: #5B6B5E; }}
+.kpi-frase {{ font-size: .92rem; line-height: 1.3; color: #3E4E40; margin-top: .15rem; }}
+.flecha.sube {{ color: var(--verde); }}
+.flecha.baja {{ color: var(--rojo); }}
+[class*="st-key-graf_"] {{ background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
+                          padding: .9rem 1rem .7rem; height: 100%; }}
+.graf-tit {{ font-size: 1.18rem; font-weight: 900; color: #1B4D20; line-height: 1.25; }}
+.graf-sub {{ font-size: .92rem; color: #5B6B5E; margin: .1rem 0 .2rem; }}
+.graf-ley {{ font-size: .85rem; color: #3E4E40; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .4rem; }}
+.graf-ley i {{ display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-left: .3rem; }}
+.conclusion {{ background: var(--verde-fondo); border-radius: 12px; padding: .55rem .8rem; font-weight: 700;
+              font-size: 1rem; line-height: 1.35; color: #1B4D20; margin: .35rem 0 .3rem; }}
+.dash-pie {{ font-size: .9rem; color: #5B6B5E; margin: 1rem 0 .4rem; }}
+
 /* ---------- Pantalla ancha: 2 columnas ---------- */
 @media (min-width: 900px) {{
   .plan-lista {{ grid-template-columns: 1fr 1fr; }}
@@ -308,9 +335,10 @@ button[data-variant="pills"][aria-pressed="true"] p {{ color: #fff !important; }
   .marca b {{ font-size: 1.3rem; }}
   .marca span {{ font-size: .9rem; }}
   .resumen {{ font-size: 1.15rem; }}
-  /* menu: 5 botones en una fila, icono arriba y nombre abajo */
-  .st-key-nav [data-testid="stPageLink-NavLink"] {{ flex-direction: column; gap: 0; padding: .3rem .1rem; }}
-  .st-key-nav [data-testid="stPageLink-NavLink"] p {{ font-size: .78rem !important; }}
+  /* menu: 6 botones en una fila, icono arriba y nombre abajo */
+  .st-key-nav {{ padding: .3rem .2rem; }}
+  .st-key-nav [data-testid="stPageLink-NavLink"] {{ flex-direction: column; gap: 0; padding: .3rem 0; }}
+  .st-key-nav [data-testid="stPageLink-NavLink"] p {{ font-size: .72rem !important; letter-spacing: -.01em; }}
   /* temporadas: 1 por fila (Streamlit apila las columnas); cartas: 2 por fila */
   .st-key-fila_temporadas [data-testid="stHorizontalBlock"] {{ flex-direction: column !important; }}
   .st-key-fila_temporadas [data-testid="stColumn"] {{ width: 100% !important; min-width: 100% !important; flex: 1 1 auto !important; }}
@@ -318,6 +346,13 @@ button[data-variant="pills"][aria-pressed="true"] p {{ color: #fff !important; }
   .st-key-fila_cartas [data-testid="stColumn"] {{ min-width: calc(50% - 8px) !important; width: calc(50% - 8px) !important;
                                                  max-width: calc(50% - 8px) !important; flex: 1 1 calc(50% - 8px) !important; }}
   .carta-ico {{ font-size: 2rem; }}
+  /* dashboard: tarjetas de 2 en 2 y graficos a todo el ancho */
+  .kpis {{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }}
+  .kpi {{ padding: .7rem .75rem; }}
+  .kpi-num {{ font-size: 1.45rem; }}
+  .kpi-frase {{ font-size: .85rem; }}
+  [class*="st-key-graf_"] {{ padding: .75rem .7rem .6rem; }}
+  .graf-tit {{ font-size: 1.08rem; }}
 }}
 @media (prefers-reduced-motion: reduce) {{ * {{ transition: none !important; }} }}
 </style>
