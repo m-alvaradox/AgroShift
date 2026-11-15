@@ -1,9 +1,16 @@
 [theme]
 base = "light"
 primaryColor = "#2E7D32"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F3F6F1"
+backgroundColor = "#FAFAF5"
+secondaryBackgroundColor = "#E8F5E9"
 textColor = "#1F2A1F"
+borderColor = "#D7DED3"
+font = "Nunito:https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap"
+headingFont = "Nunito:https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap"
+headingFontWeights = [800, 800, 800, 700, 700, 700]
+baseFontSize = 16
+baseRadius = "14px"
+buttonRadius = "14px"
 
 [server]
 headless = true

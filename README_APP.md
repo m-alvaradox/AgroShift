@@ -3,7 +3,7 @@
 ## Correr en tu computadora
 
 ```powershell
-pip install -r requirements-app.txt
+pip install -r requirements.txt
 python scripts/generar_mock.py        # crea los datos de prueba en data/mock/
 streamlit run app/streamlit_app.py
 ```
@@ -12,19 +12,29 @@ streamlit run app/streamlit_app.py
 
 ```
 app/
-├── streamlit_app.py     # menú de páginas y barra lateral (zona, tipo de año, prioridades)
+├── streamlit_app.py     # menú de 5 botones, zona y tipo de año (arriba) y "Vista técnica"
 ├── vistas/              # una página por archivo
-│   ├── inicio.py        # mapa de zonas y resumen
-│   ├── clima.py         # lluvia frente a evaporación y años El Niño/La Niña
-│   ├── zonas.py         # series de NDVI/NDWI/NDMI y calendario de siembra
-│   ├── estrategias.py   # comparación de las 3 estrategias
-│   └── recomendacion.py # ficha recomendada y reglas para el campo
+│   ├── inicio.py        # Mi finca: frase resumen, 3 semáforos y el año mes a mes
+│   ├── jugar.py         # Jugar: "Arma tu año" con cartas y 3 temporadas
+│   ├── comparar.py      # Comparar: planes A, B y C según lo que te importa
+│   ├── plan.py          # Mi plan: una acción por mes y 3 consejos
+│   ├── asistente.py     # Asistente: vista previa tipo WhatsApp (simulado)
+│   ├── clima.py         # Vista técnica: lluvia, evaporación y El Niño/La Niña
+│   ├── zonas.py         # Vista técnica: series de satélite y calendario
+│   ├── estrategias.py   # Vista técnica: comparación detallada
+│   └── recomendacion.py # Vista técnica: ficha, evidencia y reglas
 └── utils/
     ├── carga.py         # lee los archivos de los contratos (real primero, prueba después)
     ├── logica.py        # puntaje, recomendación y calendario (lógica de ejemplo)
-    └── ui.py            # colores, avisos, glosario y formato de números
+    ├── juego.py         # reglas del juego, semáforos, plan y asistente (funciones puras)
+    ├── estilo.py        # todo el CSS (colores, Nunito, celular y pantalla ancha)
+    └── ui.py            # estado compartido y piezas HTML (semáforo, barras, cartas, plantita)
 scripts/generar_mock.py  # datos de prueba con las columnas de los contratos
 ```
+
+La "Vista técnica" no sale en el menú: se abre con el enlace **Ver datos técnicos** al pie de Mi finca.
+Lo que todavía no sale de los datos está marcado con `# TODO: reemplazar con datos reales` en
+`utils/juego.py` y en pantalla dice **Simulación de ejemplo**.
 
 ## De dónde saca los datos
 

@@ -1,48 +1,70 @@
 """
-Agroshift - app principal (Streamlit).
+AgroShift - app principal (Streamlit).
 
 Correr desde la raiz del proyecto:
     streamlit run app/streamlit_app.py
 
-Este archivo arma el menu de arriba y la cabecera con la zona y el tipo de
-anio. Como se dibuja en cada pagina, lo que elige el usuario se mantiene.
+Arma el menu de 5 botones (Mi finca, Jugar, Comparar, Mi plan, Asistente),
+la eleccion de zona y tipo de año (se guarda en st.session_state) y la
+seccion "Vista tecnica" con las paginas de datos para los jueces.
 """
 import streamlit as st
 
-from utils import carga, ui
+from utils import carga, estilo, ui
 
-st.set_page_config(page_title="Agroshift", page_icon="🌱", layout="wide",
+st.set_page_config(page_title="AgroShift", page_icon="🌱", layout="wide",
                    initial_sidebar_state="collapsed")
-ui.estilos()
+estilo.aplicar()
 
-paginas = [
+PRINCIPALES = [
     st.Page("vistas/inicio.py", title="Mi finca", icon="🏡", default=True),
+    st.Page("vistas/jugar.py", title="Jugar", icon="🎲"),
+    st.Page("vistas/comparar.py", title="Comparar", icon="⚖️"),
+    st.Page("vistas/plan.py", title="Mi plan", icon="📅"),
+    st.Page("vistas/asistente.py", title="Asistente", icon="💬"),
+]
+# Vista tecnica: graficos y datos reales (no salen en el menu principal)
+TECNICAS = [
     st.Page("vistas/clima.py", title="Clima", icon="🌦️"),
-    st.Page("vistas/zonas.py", title="Mi campo", icon="🛰️"),
-    st.Page("vistas/estrategias.py", title="Opciones", icon="🌱"),
+    st.Page("vistas/zonas.py", title="Satélite", icon="🛰️"),
+    st.Page("vistas/estrategias.py", title="Estrategias", icon="🌱"),
     st.Page("vistas/recomendacion.py", title="Recomendación", icon="✅"),
 ]
-pg = st.navigation(paginas, position="top")
+pg = st.navigation(PRINCIPALES + TECNICAS, position="hidden")
+es_tecnica = pg.title in {p.title for p in TECNICAS}
 
-# --- Cabecera con los controles a la vista ---------------------------------------------
-st.markdown('<div class="marca"><b>🌱 Agroshift</b>'
-            '<span>Qué sembrar, cuándo y dónde · Daule, Guayas</span></div>',
-            unsafe_allow_html=True)
+# --- Cabecera ------------------------------------------------------------------------------
+ui.html('<div class="marca"><b>🌱 AgroShift</b><span>Qué sembrar, cuándo y dónde · Daule</span></div>')
 
+with st.container(key="nav", horizontal=True, wrap=False, gap="small"):
+    for p in PRINCIPALES:
+        estado = "on" if p.title == pg.title else "off"
+        with st.container(key=f"nav_{estado}_{p.url_path or 'inicio'}", width="stretch"):
+            st.page_link(p, label=p.title, icon=p.icon, width="stretch")
+
+# --- Zona y tipo de año (persisten entre paginas) -------------------------------------------
 tabla = carga.tabla_zonas().sort_values("zona_id")
-nombres = dict(zip(tabla["zona_id"], tabla["nombre_comun"]))
-if "zona_id" not in st.session_state:
+nombres = dict(zip(tabla["zona_id"].astype(int), tabla["nombre_comun"]))
+if st.session_state.get("zona_id") not in nombres:
     st.session_state["zona_id"] = int(tabla["zona_id"].iloc[-1])
-if "escenario" not in st.session_state:
+if st.session_state.get("escenario") not in ui.ETIQUETA_ESC:
     st.session_state["escenario"] = "normal"
 
-col_zona, col_anio = st.columns([3, 2])
-col_zona.segmented_control(
-    "¿Dónde está tu terreno?", options=list(nombres), key="zona_id",
-    format_func=lambda z: f"{ui.icono_zona(nombres[z])} {ui.corto_zona(nombres[z])}")
-col_anio.segmented_control(
-    "¿Cómo viene el año?", options=list(ui.NOMBRE_ESC), key="escenario",
-    format_func=lambda e: f"{ui.ICONO_ESC[e]} {ui.NOMBRE_ESC[e].replace('Año ', '').capitalize().replace('El niño', 'El Niño').replace('La niña', 'La Niña')}")
+with st.container(key="selector"):
+    col_zona, col_anio = st.columns([3, 2])
+    col_zona.segmented_control(
+        "¿Dónde está tu terreno?", options=list(nombres), key="zona_id", required=True,
+        format_func=lambda z: ui.etiqueta_zona(nombres[z]), width="stretch", wrap=True)
+    col_anio.segmented_control(
+        "¿Cómo viene el año?", options=list(ui.ETIQUETA_ESC), key="escenario", required=True,
+        format_func=lambda e: ui.ETIQUETA_ESC[e], width="stretch", wrap=True)
+
+if es_tecnica:
+    with st.container(key="nav_tecnica", horizontal=True, gap="small", vertical_alignment="center"):
+        st.markdown("**🔬 Vista técnica:**", width="content")
+        for p in TECNICAS:
+            st.page_link(p, label=p.title, icon=p.icon, width="content")
+        st.page_link(PRINCIPALES[0], label="Volver a Mi finca", icon="↩️", width="content")
 
 pg.run()
 

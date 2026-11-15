@@ -1,51 +1,55 @@
-"""Mi finca: que hacer este mes, el anio de la finca y las senales del satelite."""
+"""Mi finca: frase resumen, 3 semaforos, el año mes a mes y acceso al juego."""
+from datetime import date
+
 import folium
 import streamlit as st
 from streamlit_folium import st_folium
 
-from utils import carga, logica, ui
+from utils import carga, juego, ui
 
 zid, znombre = ui.zona_actual()
+tipo = ui.tipo_zona(znombre)
 esc = ui.escenario_actual()
-hoy = logica.mes_actual()
+hoy = date.today().month - 1
 
 clim = carga.climatologia()
-cult = carga.cultivos()
-info = carga.estrategias_info()
-mejor = logica.comparar(carga.estrategias(), zid, esc, ui.pesos_actuales()).iloc[0]
-e = info[mejor["estrategia"]]
-plan = logica.plan(mejor["estrategia"], clim, cult)
+serie = ui.serie_zona(zid)
+factor = juego.factor_lluvia(carga.lluvia_imerg(), esc)
 
-st.title(f"{ui.icono_zona(znombre)} Tu finca en la {znombre.lower()}")
-ui.aviso_datos()
+# Que datos son reales y cuales todavia de prueba
+clima_real = not carga.es_mock("climatologia_daule.csv")
+anio_real = esc == "normal" or not carga.es_mock("lluvia_imerg_daule.csv")
+satelite_real = not carga.es_mock("series_zonas.csv")
 
-# --- Lo que hay que hacer ahora -----------------------------------------------------------
-ui.tarjeta_accion(logica.accion_del_mes(plan[0], hoy), hoy)
+st.title(f"{ui.icono_zona(znombre)} Mi finca")
+ui.html(f'<div class="resumen">{juego.frase_finca(tipo, esc, clim)}</div>')
 
-# --- El anio de la finca (el elemento principal) -----------------------------------------
-st.subheader("El año de tu finca")
-st.markdown(f"Con la opción recomendada, **{e['nombre'].lower()}**, tu año se vería así:")
-filas = [(f"Año {i + 1}" if len(plan) > 1 else "Tu plan", meses) for i, meses in enumerate(plan)]
-ui.franja_anual(clim, filas, mes_hoy=hoy)
-st.page_link("vistas/estrategias.py", label="Comparar con otras opciones", icon="🌱")
+izq, der = st.columns(2, gap="large")
 
-# --- Senales del satelite -----------------------------------------------------------------
-st.subheader("Lo que muestran los satélites")
-serie = carga.series()
-sz = serie[serie["zona_id"] == zid]
-if sz.empty:
-    sz = serie[serie["zona_id"] == 0]
-c1, c2, c3 = st.columns(3)
-with c1:
-    ui.tarjeta_senal("lluvia", logica.senal_lluvia(carga.clima_mensual(), clim))
-with c2:
-    ui.tarjeta_senal("verdor", logica.senal_verdor(sz))
-with c3:
-    ui.tarjeta_senal("agua", logica.senal_agua(sz))
-ui.fuente("lluvia de NASA POWER; verdor y agua de Landsat 8 y 9.")
+with izq:
+    st.subheader("¿Cómo está tu finca?")
+    ui.html(ui.semaforo("Agua", "💧", juego.semaforo_agua(clim, factor), clima_real and anio_real))
+    ui.html(ui.semaforo("Suelo", "🌱", juego.semaforo_suelo(serie), satelite_real))
+    ui.html(ui.semaforo("Riesgo de inundación", "🌊", juego.semaforo_inundacion(tipo, esc, serie),
+                        satelite_real))
 
-# --- Mapa ---------------------------------------------------------------------------------
-with st.expander("🗺️ Ver las zonas en el mapa"):
+with der:
+    st.subheader("Tu año, mes a mes")
+    celdas = "".join(
+        f'<div class="mes12 {m["tipo"]}{" hoy" if i == hoy else ""}"><span>{m["icono"]}</span>{m["mes"]}</div>'
+        for i, m in enumerate(juego.meses_12(clim)))
+    ui.html(f'<div class="meses12">{celdas}</div>'
+            '<div class="leyenda"><span>🌧️ Llueve fuerte</span><span>🌦️ Algo de lluvia</span>'
+            f'<span>☀️ Seco</span></div>{ui.etiqueta_fuente(clima_real)}')
+
+    st.write("")
+    with st.container(key="cta_jugar"):
+        ui.html('<div class="cta-tit">🎲 Juega tu temporada</div>'
+                '<p>Elige qué sembrar en cada temporada y mira cómo te iría en el año.</p>')
+        st.page_link("vistas/jugar.py", label="Jugar ahora", icon="▶️", width="stretch")
+
+# --- Mapa (opcional) -------------------------------------------------------------------------
+with st.expander("🗺️ Ver mi zona en el mapa"):
     geo = carga.zonas()
     lons = [p[0] for f in geo["features"] for p in f["geometry"]["coordinates"][0]]
     lats = [p[1] for f in geo["features"] for p in f["geometry"]["coordinates"][0]]
@@ -56,17 +60,19 @@ with st.expander("🗺️ Ver las zonas en el mapa"):
         attr="Esri World Imagery", name="Satélite").add_to(mapa)
     folium.TileLayer("OpenStreetMap", name="Mapa").add_to(mapa)
 
-    def estilo(feature):
-        z = feature["properties"]["zona_id"]
-        elegida = z == zid
-        return {"fillColor": ui.COLOR_ZONA.get(z, "#888"), "color": "#fff" if elegida else "#333",
-                "weight": 4 if elegida else 1, "fillOpacity": 0.5 if elegida else 0.2}
+    def estilo_zona(feature):
+        elegida = feature["properties"]["zona_id"] == zid
+        return {"fillColor": ui.COLOR_ZONA.get(feature["properties"]["zona_id"], "#888"),
+                "color": "#fff" if elegida else "#333", "weight": 4 if elegida else 1,
+                "fillOpacity": 0.5 if elegida else 0.2}
 
-    folium.GeoJson(geo, name="Zonas", style_function=estilo,
-                   tooltip=folium.GeoJsonTooltip(fields=["nombre_comun", "area_ha"],
-                                                 aliases=["Zona", "Hectáreas"])).add_to(mapa)
-    folium.LayerControl(collapsed=True).add_to(mapa)
+    folium.GeoJson(geo, name="Zonas", style_function=estilo_zona,
+                   tooltip=folium.GeoJsonTooltip(fields=["nombre_comun"], aliases=["Zona"])).add_to(mapa)
     mapa.fit_bounds([[min(lats), min(lons)], [max(lats), max(lons)]])
-    st_folium(mapa, height=420, use_container_width=True, returned_objects=[])
-    st.caption("La zona elegida se ve resaltada. Las zonas salen de la altura del terreno "
-               "y de cómo se ve el campo desde el satélite.")
+    st_folium(mapa, height=380, use_container_width=True, returned_objects=[])
+    st.caption("Tu zona se ve resaltada.")
+
+# --- Pie --------------------------------------------------------------------------------------
+if carga.archivos_mock():
+    st.caption("🧪 Algunos datos todavía son de ejemplo mientras el equipo termina los reales.")
+st.page_link("vistas/clima.py", label="Ver datos técnicos", icon="🔬")
