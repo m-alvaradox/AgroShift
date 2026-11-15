@@ -10,7 +10,7 @@ esc = ui.escenario_actual()
 st.title("🌱 Compara tus opciones")
 ui.origen_datos()
 if ui.falta("estrategias.csv", "estrategias_info.json"):
-    st.stop()
+    ui.terminar_pagina()
 
 # --- Prioridades (se guardan para las otras paginas) --------------------------------------
 ICONO_CRIT = {"nota_agua": "💧", "nota_suelo": "🪱", "nota_plagas": "🐛", "nota_ingresos": "💵"}
@@ -89,3 +89,61 @@ ui.fuente("agua de riego con el método FAO-56 (NASA POWER y los años de GPM IM
           "suelo, plagas e ingresos con las reglas de P4 (scripts/calcular_estrategias.py).")
 
 st.page_link("vistas/recomendacion.py", label="Ver por qué te recomendamos la primera", icon="✅")
+
+# --- Conoce los cultivos (data/cultivos.csv de P4, en lenguaje simple) --------------------------
+st.subheader("🌾 Conoce los cultivos")
+ICONO_C = {"Arroz": "🌾", "Soya": "🫘", "Maíz duro": "🌽"}
+if not ui.falta("cultivos.csv"):
+    tabla_z = carga.tabla_zonas() if carga.disponible("zonas_daule.geojson") else None
+    zonas_por_tipo = {}
+    if tabla_z is not None:
+        for n in tabla_z["nombre_comun"]:
+            zonas_por_tipo.setdefault(ui.tipo_zona(n), []).append(ui.etiqueta_zona(n))
+    tarjetas_c = []
+    for _, c in carga.cultivos().iterrows():
+        nombre = c["cultivo"]
+        dias = int(c["ciclo_dias"])
+        tolera = bool(c["tolera_inundacion"])
+        agua_min = c.get("etc_min_mm", c.get("agua_min_mm"))
+        agua_max = c.get("etc_max_mm", c.get("agua_max_mm"))
+        # Donde conviene: si aguanta el agua, la zona baja; si no, las zonas que drenan
+        if tolera:
+            donde = zonas_por_tipo.get("baja", ["la zona baja"])
+            por_que = "aguanta el terreno inundado"
+        else:
+            donde = zonas_por_tipo.get("loma", []) + zonas_por_tipo.get("ladera", [])
+            por_que = "necesita que el agua drene: en la zona que se encharca se ahoga"
+        extra_arroz = (" Además necesita agua para mantener el terreno inundado." if nombre == "Arroz" else "")
+        tarjetas_c.append(
+            f'<div class="idea"><div class="idea-ico">{ICONO_C.get(nombre, "🌱")}</div><div>'
+            f'<div class="idea-tit">{nombre}</div>'
+            f'<p>⏱️ <b>{dias} días</b> de siembra a cosecha (unos {round(dias / 30)} meses).</p>'
+            f'<p>💧 Usa entre <b>{ui.num(agua_min)} y {ui.num(agua_max)} mm</b> de agua por ciclo (lo que la '
+            f'planta toma y evapora); pide más a mitad del ciclo.{extra_arroz}</p>'
+            f'<p>🌊 ¿Aguanta el encharcamiento? <b>{"Sí ✅" if tolera else "No ❌"}</b></p>'
+            f'<p>📍 Conviene en: <b>{", ".join(donde) or "—"}</b>, porque {por_que}.</p></div></div>')
+    ui.html(f'<div class="ideas">{"".join(tarjetas_c)}</div>')
+    ui.html(ui.confianza("calendario"))
+    ui.fuente("ciclos del INIAP y agua de referencia de la FAO (agencia de la ONU para la agricultura), "
+              "catálogo de cultivos del equipo; zonas según el relieve del satélite SRTM.")
+
+# --- El suelo de cada zona -----------------------------------------------------------------------
+st.subheader("🪨 El terreno de cada zona")
+if not ui.falta("zonas_daule.geojson"):
+    tz = carga.tabla_zonas().sort_values("zona_id")
+    filas_s = []
+    for _, z in tz.iterrows():
+        n = z["nombre_comun"]
+        pend = z.get("pendiente")
+        elev = z.get("elevacion")
+        desc_p = ("casi plano" if pend < 3 else "con algo de pendiente" if pend < 5 else "con pendiente")
+        filas_s.append(
+            f'<div class="idea"><div class="idea-ico">{ui.icono_zona(n)}</div><div>'
+            f'<div class="idea-tit">{ui.etiqueta_zona(n)}</div>'
+            f'<p>⛰️ Altura promedio: <b>{ui.num(elev, 1)} m</b> sobre el mar.</p>'
+            f'<p>📐 Pendiente promedio: <b>{ui.num(pend, 1)}°</b> ({desc_p}).</p></div></div>')
+    ui.html(f'<div class="ideas">{"".join(filas_s)}</div>')
+    st.info("Todavía no tenemos datos de suelo de cada finca (textura, drenaje, fertilidad). "
+            "Por ahora usamos la altura y la pendiente de cada zona.", icon="🪨")
+    ui.html(ui.confianza("zonas"))
+    ui.fuente("relieve del satélite SRTM de la NASA, zonas del equipo.")

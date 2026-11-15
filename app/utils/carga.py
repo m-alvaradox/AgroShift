@@ -205,7 +205,7 @@ def _csv(path: str, mtime: float, fechas: tuple = ()) -> pd.DataFrame:
     return pd.read_csv(path, parse_dates=list(fechas))
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, persist="disk")  # sobrevive al reinicio del servidor
 def _json(path: str, mtime: float):
     return leer_json_archivo(Path(path))
 
@@ -280,6 +280,20 @@ def estrategias_info() -> dict:
 def reglas() -> list[dict]:
     """Reglas con zona_id normalizado (int o None = regla general)."""
     return [{**r, "zona_id": _a_entero(r.get("zona_id"))} for r in leer_json("reglas.json")]
+
+
+MESES_SAT = APP_DIR / "data" / "meses_satelite.csv"   # lo escribe scripts/series_por_zona.py
+
+
+def meses_satelite() -> pd.DataFrame | None:
+    """Una fila por mes: estado de la foto y rutas (relativas a app/) de las miniaturas."""
+    if not MESES_SAT.exists():
+        return None
+    d = _csv(str(MESES_SAT), MESES_SAT.stat().st_mtime, ("fecha",)).copy()
+    for c in ("color", "ndvi"):
+        d[c] = d[c].fillna("").astype(str)
+        d[c] = [r if r and (APP_DIR / r).exists() else "" for r in d[c]]
+    return d.sort_values("fecha").reset_index(drop=True)
 
 
 def reglas_zona(zona_id: int) -> list[dict]:

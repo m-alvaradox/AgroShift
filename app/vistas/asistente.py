@@ -12,9 +12,10 @@ esc = ui.escenario_actual()
 hoy = date.today().month - 1
 st.title("💬 Asistente")
 if ui.falta("climatologia_daule.csv"):  # sin clima el asistente no puede responder
-    st.stop()
+    ui.terminar_pagina()
 clim = carga.climatologia()
 imerg = carga.lluvia_imerg() if carga.disponible("lluvia_imerg_daule.csv") else None
+mensual = carga.clima_mensual() if carga.disponible("clima_mensual_daule.csv") else None
 
 recomendada = None
 if carga.disponible("estrategias.csv"):
@@ -28,6 +29,7 @@ ctx = {
     "plan_nombre": atajo["nombre"], "secuencia": atajo["secuencia"],
     "lluvias": juego.lluvias_texto(clim),
     "agua": juego.semaforo_agua(clim, juego.factor_lluvia(imerg, esc)),
+    "factor": juego.factor_lluvia(imerg, esc), "factor_nino": juego.factor_lluvia(imerg, "nino"),
     "mes": mes_plan["mes_largo"], "accion": mes_plan["accion"],
 }
 
@@ -40,7 +42,8 @@ ss = st.session_state
 if "chat" not in ss:
     ss["chat"] = [
         {"de": "bot", "texto": "¡Hola! Soy el asistente de AgroShift 🌱. Toca una pregunta de abajo.", "hora": ahora()},
-        {"de": "bot", "texto": juego.ALERTA_EJEMPLO, "hora": ahora(), "alerta": True},
+        # un hecho real del ultimo mes (no un pronostico)
+        {"de": "bot", "texto": juego.dato_del_mes(mensual, clim, hoy), "hora": ahora()},
     ]
 
 
@@ -65,4 +68,4 @@ with st.container(key="rapidas", horizontal=True, gap="small"):
         st.button(texto, key=f"rapida_{clave}", on_click=preguntar, args=(clave,), width="stretch")
     st.button("🧹 Borrar chat", key="rapida_borrar", on_click=borrar, width="stretch")
 
-ui.html('<div class="wa-nota">📱 Vista previa: así funcionará por WhatsApp.</div>')
+ui.html('<div class="wa-nota">📱 Vista previa: así funcionará por WhatsApp. Las respuestas salen de los datos reales de la app.</div>' + ui.confianza("recomendacion", esc))

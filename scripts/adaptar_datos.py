@@ -99,14 +99,32 @@ def clima(lat: float) -> tuple[pd.DataFrame, pd.DataFrame]:
     return m, c
 
 
+INDICES_ZONA = PROC / "indices_por_zona.csv"   # lo escribe scripts/series_por_zona.py
+COBERTURA_MIN_ZONA = 10.0                      # % de la zona sin nubes para usar el promedio del mes
+
+
 def series(mensual: pd.DataFrame) -> pd.DataFrame:
+    """
+    zona_id 0 = todo el recuadro (serie de P2, sin cambios en ndvi, ndwi y ndmi).
+    Si existe data/processed/indices_por_zona.csv (scripts/series_por_zona.py), se agregan
+    las zonas 1, 2 y 3 de P3 y la columna pct_agua (% de la zona con NDWI > 0).
+    """
     i = pd.read_csv(PROC / "indices_mensuales_daule_integrados.csv")
     i["fecha"] = pd.to_datetime(i["mes"] + "-01")
     s = i.rename(columns={"NDVI": "ndvi", "NDWI": "ndwi", "NDMI": "ndmi"})
-    s["zona_id"] = 0  # todo el recuadro, hasta que P3 entregue las zonas
+    s["zona_id"] = 0
+    if INDICES_ZONA.exists():
+        z = pd.read_csv(INDICES_ZONA, parse_dates=["fecha"])
+        s = s.merge(z.loc[z["zona_id"] == 0, ["fecha", "pct_agua"]], on="fecha", how="left")
+        zonas = z[z["zona_id"] != 0].rename(columns={"cobertura_pct": "cobertura_zona_pct"})
+        # Con menos del 10 % de la zona sin nubes el promedio no es confiable: se trata como sin foto
+        poca = zonas["cobertura_zona_pct"] < COBERTURA_MIN_ZONA
+        zonas.loc[poca, ["ndvi", "ndwi", "ndmi", "pct_agua"]] = float("nan")
+        s = pd.concat([s, zonas], ignore_index=True)
     s = s.merge(mensual[["fecha", "lluvia_mm"]], on="fecha", how="left")
-    cols = ["fecha", "zona_id", "ndvi", "ndwi", "ndmi", "lluvia_mm", "imagenes", "calidad_cobertura"]
-    s = s[[c for c in cols if c in s.columns]]
+    cols = ["fecha", "zona_id", "ndvi", "ndwi", "ndmi", "lluvia_mm", "pct_agua", "imagenes",
+            "calidad_cobertura", "cobertura_zona_pct"]
+    s = s[[c for c in cols if c in s.columns]].sort_values(["zona_id", "fecha"]).reset_index(drop=True)
     s[["ndvi", "ndwi", "ndmi"]] = s[["ndvi", "ndwi", "ndmi"]].round(4)
     return s
 

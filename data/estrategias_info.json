@@ -10,15 +10,15 @@
     ],
     "beneficios": [
       "Es la práctica conocida en la zona: no exige cambiar de cultivo ni de semilla.",
-      "El arroz es el único de los tres cultivos del catálogo que se siembra bajo inundación (P4, data/cultivos.csv)."
+      "El arroz es el único de los tres cultivos que se siembra con el terreno inundado."
     ],
     "vacios": [
-      "Agua real de saturación, lámina y percolación del arroz en cada lote (FAO, Irrigation Water Needs, cap. 4; regla AGR-005).",
-      "Validación local del ciclo de 115 días y de los Kc del arroz (INIAP, FAO-56)."
+      "Cuánta agua extra necesita el arroz en cada lote para mantenerse inundado.",
+      "Confirmar en Daule cuántos días dura el ciclo del arroz y cuánta agua usa."
     ],
     "riesgos": [
-      "Repetir arroz mantiene malezas, plagas y enfermedades (regla AGR-001).",
-      "Es la que más riego necesita en la época seca."
+      "Sembrar arroz tras arroz mantiene las malezas, plagas y enfermedades.",
+      "Es la que más agua de riego necesita en la época seca."
     ]
   },
   {
@@ -32,16 +32,16 @@
       "Ciclo de 105–110 días de las variedades de soya del INIAP (P4, docs/fuentes_catalogo_cultivos.md)."
     ],
     "beneficios": [
-      "Necesita menos riego que el arroz continuo en la época seca.",
-      "Rota familias botánicas y rompe la repetición de arroz que favorece plagas (regla AGR-001).",
+      "Necesita menos riego que sembrar solo arroz en la época seca.",
+      "Cambiar de cultivo corta el ciclo de las plagas del arroz.",
       "Suma un segundo cultivo con su propio mercado."
     ],
     "vacios": [
-      "Variedad, semilla disponible y mercado de la soya en Daule (regla AGR-002).",
-      "Clasificación del drenaje de cada lote (regla AGR-003)."
+      "Qué variedad de soya usar, si hay semilla y quién la compra en Daule.",
+      "Qué tan bien drena el agua cada lote."
     ],
     "riesgos": [
-      "La soya no tolera el encharcamiento: no recomendarla en lotes con drenaje deficiente o riesgo alto de anegamiento (reglas AGR-003 y AGR-004).",
+      "La soya no aguanta el encharcamiento: no la siembres en lotes que se inundan o drenan mal.",
       "Conseguir semilla y comprador para la soya."
     ]
   },
@@ -57,14 +57,14 @@
     ],
     "beneficios": [
       "Es la que menos riego necesita de las tres.",
-      "Alterna tres cultivos: corta los ciclos de plagas y diversifica los ingresos."
+      "Alterna tres cultivos: corta los ciclos de plagas y reparte el ingreso."
     ],
     "vacios": [
-      "Rendimientos locales de maíz y soya en cada zona.",
-      "Validación de los Kc y de las fechas de siembra con datos de campo (P1 y P4)."
+      "Cuánto rinden el maíz y la soya en cada zona de Daule.",
+      "Confirmar en el campo las fechas de siembra y el agua de cada cultivo."
     ],
     "riesgos": [
-      "La soya y el maíz no toleran el anegamiento: revisar el drenaje antes de recomendarla (reglas AGR-003 y AGR-004).",
+      "La soya y el maíz no aguantan el encharcamiento: revisa que el lote drene bien.",
       "Exige más planificación: dos años y tres cultivos."
     ]
   }

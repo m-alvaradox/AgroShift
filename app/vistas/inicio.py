@@ -20,7 +20,7 @@ factor = juego.factor_lluvia(imerg, esc)
 
 st.title(f"{ui.icono_zona(znombre)} Mi finca")
 if clim is not None:
-    ui.html(f'<div class="resumen">{juego.frase_finca(tipo, esc, clim)}</div>')
+    ui.html(f'<div class="resumen">{juego.frase_finca(tipo, esc, clim, factor)}</div>')
 
 izq, der = st.columns(2, gap="large")
 
@@ -29,11 +29,11 @@ with izq:
     if not ui.falta("climatologia_daule.csv"):
         if esc != "normal" and imerg is None:
             ui.falta("lluvia_imerg_daule.csv")
-        ui.html(ui.semaforo("Agua", "💧", juego.semaforo_agua(clim, factor), True))
+        ui.html(ui.semaforo("Agua", "💧", juego.semaforo_agua(clim, factor), True, conf="agua"))
     if not ui.falta("series_zonas.csv"):
-        ui.html(ui.semaforo("Suelo", "🌱", juego.semaforo_suelo(serie), True))
+        ui.html(ui.semaforo("Suelo", "🌱", juego.semaforo_suelo(serie), True, conf="verdor"))
     ui.html(ui.semaforo("Riesgo de inundación", "🌊", juego.semaforo_inundacion(tipo, esc, serie),
-                        hay_satelite))
+                        hay_satelite, conf="inundacion"))
 
 with der:
     st.subheader("Tu año, mes a mes")
@@ -61,4 +61,5 @@ if not ui.falta("zonas_daule.geojson"):
                "botón de capas (arriba a la derecha) puedes ver la elevación o la pendiente.")
 
 # --- Pie --------------------------------------------------------------------------------------
+st.page_link("vistas/estrategias.py", label="Conoce los cultivos y el terreno de cada zona", icon="🌾")
 st.page_link("vistas/clima.py", label="Ver datos técnicos: de dónde sale cada dato", icon="🔬")

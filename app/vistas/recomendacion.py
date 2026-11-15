@@ -10,18 +10,19 @@ pesos = ui.pesos_actuales()
 st.title("✅ Te recomendamos")
 ui.origen_datos()
 if ui.falta("estrategias.csv", "estrategias_info.json"):
-    st.stop()
+    ui.terminar_pagina()
 
 est = carga.estrategias()
 info = carga.estrategias_info()
 comp = logica.comparar(est, zid, esc, pesos)
 if comp.empty:
     st.info("Todavía no hay planes para esta zona y este año.", icon="ℹ️")
-    st.stop()
+    ui.terminar_pagina()
 mejor = comp.iloc[0]
 e = info[mejor["estrategia"]]
 st.markdown(f"## {e['nombre']}")
 st.markdown(f"Para la **{znombre.lower()}** en un **{ui.NOMBRE_ESC[esc].lower()}**. {e['descripcion']}")
+ui.html(ui.confianza("recomendacion", esc))
 
 hoy = logica.mes_actual()
 if not ui.falta("climatologia_daule.csv", "cultivos.csv"):
@@ -64,5 +65,3 @@ if reglas:
 else:
     st.write("Todavía no hay reglas para esta zona.")
 
-st.divider()
-ui.aviso_tecnico()

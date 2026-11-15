@@ -48,7 +48,7 @@ if ss["jugado"] and None not in ss["casillas"]:
     st.title("🌾 Así te fue en el año")
     if ui.falta("climatologia_daule.csv"):
         st.button("🔁 Volver a armar", on_click=volver, key="btn_rearmar", width="stretch")
-        st.stop()
+        ui.terminar_pagina()
     atajo = juego.atajo_de(casillas)
     hay_notas = atajo and carga.disponible("estrategias.csv")
     notas = juego.notas_estrategia(carga.estrategias(), atajo, zid, esc) if hay_notas else None
@@ -66,13 +66,14 @@ if ss["jugado"] and None not in ss["casillas"]:
         if res["logro"]:
             ui.html(f'<div class="logro">🏅 Logro: {res["logro"]}</div>')
     with der:
-        ui.html(ui.tres_barras(res["barras"]) + ui.etiqueta_fuente(real, "🧮 Estimación del juego"))
+        ui.html(ui.tres_barras(res["barras"]) + ui.etiqueta_fuente(real, "🧮 Estimación del juego")
+                + ui.confianza("recomendacion" if real else "juego", esc))
     st.subheader("Lo que pasó en el año")
     for e in res["eventos"]:
         ui.html(f'<div class="evento {e["tipo"]}"><b>{e["meses"]}:</b> {e["texto"]}</div>')
     if real:
-        st.caption("Las barras salen del balance de agua FAO-56 y de las reglas de P4 "
-                   "(estrategias.csv) para tu zona y tipo de año.")
+        st.caption("Las barras salen del cálculo de agua con datos de la NASA y de las reglas de campo "
+                   "para tu zona y tu tipo de año.")
     else:
         st.caption("Esta combinación no es uno de los planes A, B o C: las barras son una "
                    "estimación del juego con la lluvia y los cultivos reales.")
@@ -81,7 +82,7 @@ if ss["jugado"] and None not in ss["casillas"]:
     c1.button("🔁 Volver a armar", on_click=volver, key="btn_rearmar", width="stretch")
     with c2:
         st.page_link("vistas/comparar.py", label="Comparar planes", icon="⚖️", width="stretch")
-    st.stop()
+    ui.terminar_pagina()
 
 # --- Tablero -----------------------------------------------------------------------------------
 st.title("🎲 Arma tu año")

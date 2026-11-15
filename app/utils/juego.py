@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from utils.logica import SECUENCIAS
+from utils.logica import SECUENCIAS, UMBRAL_AGUA_PCT
 
 MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 MESES_LARGOS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
@@ -260,7 +260,17 @@ def meses_por_tipo(clim: pd.DataFrame) -> dict:
     }
 
 
-def frase_finca(zona_tipo: str, escenario: str, clim: pd.DataFrame) -> str:
+def comparacion_anio(escenario: str, factor: float) -> str:
+    """Lo que paso en los años de ese tipo (dato IMERG), sin predecir el futuro."""
+    if escenario == "normal" or abs(factor - 1) < 0.05:
+        return ""
+    pct = abs(factor - 1) * 100
+    nombre = NOMBRE_ANIO.get(escenario, "año")
+    return (f" En el {nombre} de los datos, de diciembre a mayo llovió un {pct:.0f} % "
+            f"{'más' if factor > 1 else 'menos'} que en un año normal.")
+
+
+def frase_finca(zona_tipo: str, escenario: str, clim: pd.DataFrame, factor: float = 1.0) -> str:
     m = meses_por_tipo(clim)
     if zona_tipo == "baja":
         frase = f"Tu terreno se encharca de {_rango(m['lluvioso'] or m['agua'])}."
@@ -271,9 +281,7 @@ def frase_finca(zona_tipo: str, escenario: str, clim: pd.DataFrame) -> str:
                  "fuertes pueden arrastrar el suelo.")
     else:
         frase = f"Tu terreno recibe agua de {_rango(m['agua'])} y se seca de {_rango(m['seco'])}."
-    extra = {"nino": " Este año puede llover más de lo normal.",
-             "nina": " Este año puede llover menos de lo normal."}
-    return frase + extra.get(escenario, "")
+    return frase + comparacion_anio(escenario, factor)
 
 
 def lluvias_texto(clim: pd.DataFrame) -> str:
@@ -294,7 +302,7 @@ def semaforo_agua(clim: pd.DataFrame, factor: float = 1.0) -> dict:
         return {"color": "verde", "palabra": "Bien", "texto": "Llueve lo suficiente casi todo el año."}
     if r >= 0.45:
         return {"color": "amarillo", "palabra": "Regular", "texto": "Alcanza en lluvias. En la seca hay que regar."}
-    return {"color": "rojo", "palabra": "Bajo", "texto": "Va a faltar agua. Guárdala y riega con cuidado."}
+    return {"color": "rojo", "palabra": "Bajo", "texto": "Llueve menos de la mitad de lo que se evapora: falta agua. Guárdala y riega con cuidado."}
 
 
 def semaforo_suelo(serie: pd.DataFrame) -> dict:
@@ -317,8 +325,11 @@ def semaforo_inundacion(zona_tipo: str, escenario: str, serie: pd.DataFrame) -> 
     puntos = {"loma": 0, "ladera": 1, "transicion": 1, "baja": 2}.get(zona_tipo, 1)
     puntos += {"nina": -1, "normal": 0, "nino": 1}.get(escenario, 0)
     s = serie.dropna(subset=["ndwi"]).sort_values("fecha") if not serie.empty else serie
-    if not s.empty and float(s.iloc[-1]["ndwi"]) > 0:
-        puntos += 1
+    if not s.empty:
+        ult = s.iloc[-1]
+        pct = ult.get("pct_agua") if "pct_agua" in s else None
+        hubo_agua = (pct >= UMBRAL_AGUA_PCT) if pct is not None and pd.notna(pct) else float(ult["ndwi"]) > 0
+        puntos += 1 if hubo_agua else 0
     if puntos >= 3:
         return {"color": "rojo", "palabra": "Alto", "texto": "Tu terreno se puede inundar. En lluvias siembra solo arroz."}
     if puntos == 2:
@@ -385,8 +396,25 @@ PREGUNTAS = {
     "nino": "¿Y si llueve mucho?",
     "plan": "Mi plan",
 }
-ALERTA_EJEMPLO = "⚠️ Se viene una semana muy lluviosa. No siembres en zona baja hasta el lunes."
 NOMBRE_ANIO = {"normal": "año normal", "nino": "año muy lluvioso", "nina": "año seco"}
+
+
+def dato_del_mes(mensual: pd.DataFrame | None, clim: pd.DataFrame, mes_hoy: int) -> str:
+    """
+    Mensaje del asistente SIN pronosticos: lo que de verdad llovio el ultimo mes con datos
+    (NASA POWER) frente a lo normal, y lo que normalmente llueve en el mes actual.
+    """
+    tipica = clim.set_index("mes")["lluvia_mm"]
+    partes = []
+    if mensual is not None and not mensual.dropna(subset=["lluvia_mm"]).empty:
+        ult = mensual.dropna(subset=["lluvia_mm"]).sort_values("fecha").iloc[-1]
+        f = pd.Timestamp(ult["fecha"])
+        normal = float(tipica.get(f.month, float("nan")))
+        partes.append(f"📊 En {MESES_LARGOS[f.month - 1]} de {f.year} llovieron {ult['lluvia_mm']:.0f} mm; "
+                      f"lo normal para ese mes es {normal:.0f} mm.")
+    partes.append(f"En {MESES_LARGOS[mes_hoy]} normalmente llueven {float(tipica.get(mes_hoy + 1, 0)):.0f} mm "
+                  "(mediana de 2021 a 2026, NASA POWER).")
+    return " ".join(partes)
 
 
 def respuesta(clave: str, ctx: dict) -> str:
@@ -399,16 +427,14 @@ def respuesta(clave: str, ctx: dict) -> str:
         seq = " → ".join(ctx["secuencia"])
         return f"Para tu {ctx['zona'].lower()} en un {anio} te conviene: {seq}. Es el plan «{ctx['plan_nombre']}»."
     if clave == "lluvia":
-        extra = {"nino": " Este año puede llover más de lo normal.",
-                 "nina": " Este año puede llover menos de lo normal."}.get(ctx["escenario"], "")
+        extra = comparacion_anio(ctx["escenario"], ctx.get("factor", 1.0))
         return f"Llueve sobre todo de {ctx['lluvias']}.{extra} Agua para tu finca: {ctx['agua']['palabra']}."
     if clave == "nino":
         if ctx["zona_tipo"] == "baja":
             consejo = "Tu zona se puede inundar: en lluvias siembra solo arroz y limpia los canales."
         else:
             consejo = "Tu zona no suele inundarse, pero limpia las zanjas antes de enero."
-        aviso = ("Elegiste año muy lluvioso." if ctx["escenario"] == "nino"
-                 else "Si viene un año muy lluvioso, lloverá mucho de enero a abril.")
+        aviso = comparacion_anio("nino", ctx.get("factor_nino", 1.0)).strip() or             "En los datos, el año más lluvioso fue el de la temporada de lluvias más fuerte."
         return f"{aviso} {consejo}"
     if clave == "plan":
         return f"En {ctx['mes']}: {ctx['accion']} Mira el plan completo en «Mi plan»."

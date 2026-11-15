@@ -27,6 +27,8 @@ def elegir(k):
 atajo = juego.ATAJOS[elegida]
 ui.html(f'<p><b>{elegida} · {atajo["nombre"]}</b>{" ⭐ recomendado" if elegida == recomendada else ""}'
         f'<br>{ui.mini_cartas(atajo["secuencia"])}</p>')
+if recomendada:
+    ui.html(ui.confianza("recomendacion", esc))
 
 with st.container(key="cambiar_plan", horizontal=True, gap="small"):
     for k, a in juego.ATAJOS.items():
@@ -39,10 +41,10 @@ for i, m in enumerate(juego.plan_12_meses(atajo["secuencia"])):
     filas.append(f'<div class="plan-mes{" hoy" if i == hoy else ""}"><div class="ico">{m["icono"]}</div>'
                  f'<div class="mes">{m["mes"]}</div><div><div class="etapa">{m["etapa"]} · {m["cultivo"]}'
                  f'{" · este mes" if i == hoy else ""}</div><div class="acc">{m["accion"]}</div></div></div>')
-ui.html(f'<div class="plan-lista">{"".join(filas)}</div>{ui.etiqueta_fuente(False, "📋 Calendario general por temporada")}')
+ui.html(f'<div class="plan-lista">{"".join(filas)}</div>{ui.etiqueta_fuente(False, "📋 Calendario general por temporada")}'
+        + ui.confianza("plan"))
 
 st.subheader("3 consejos para ti")
 for c in juego.consejos(tipo, esc, atajo["secuencia"]):
     ui.html(f'<div class="consejo">💡 {c}</div>')
 
-ui.aviso_tecnico()

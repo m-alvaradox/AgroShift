@@ -296,6 +296,26 @@ button[data-variant="pills"][aria-pressed="true"] p {{ color: #fff !important; }
 .estrellas {{ color: #C9A227; font-size: 1.35rem; letter-spacing: .08em; }}
 .gotas {{ font-size: 1.1rem; letter-spacing: .05em; }}
 
+/* ---------- Mi campo: fotos de cada mes ---------- */
+.estado-mes {{ background: #fff; border-radius: 14px; box-shadow: var(--sombra); padding: .7rem .9rem;
+              line-height: 1.7; margin: .4rem 0 1rem; }}
+.galeria {{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; margin: .4rem 0; }}
+.galeria figure {{ margin: 0; background: #fff; border-radius: 12px; box-shadow: var(--sombra); padding: .35rem; }}
+.galeria img {{ width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 8px; background: #ECEFF1; display: block; }}
+.galeria .sin-foto {{ aspect-ratio: 1 / 1; border-radius: 8px; background: #ECEFF1; color: #607D8B; display: flex;
+                     flex-direction: column; justify-content: center; align-items: center; text-align: center;
+                     font-size: .8rem; line-height: 1.3; }}
+.galeria figcaption {{ font-size: .8rem; text-align: center; color: #3E4E40; padding-top: .25rem; font-weight: 700; }}
+@media (max-width: 640px) {{ .galeria {{ grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }} }}
+
+/* ---------- Confianza y aviso tecnico ---------- */
+.conf {{ display: inline-block; font-size: .85rem; line-height: 1.35; border-radius: 10px; padding: .25rem .6rem;
+        margin: .35rem 0 .1rem; color: #3E4E40; background: #F1F3EF; }}
+.conf.alta {{ background: #E8F5E9; }}
+.conf.media {{ background: #FFF8E1; }}
+.conf.baja {{ background: #FFEBEE; }}
+.aviso-tecnico {{ background: #fff; border: 2px dashed #C5D3C0; border-radius: 14px; padding: .6rem .9rem;
+                 font-size: .95rem; color: #3E4E40; margin: 1.2rem 0 .2rem; }}
 /* ---------- Dashboard ilustrativo ---------- */
 .hero {{ background: linear-gradient(135deg, #1B4D20 0%, #2E7D32 55%, #4E8B3A 100%); color: #fff;
         border-radius: 26px; padding: 1.6rem 1.7rem 1.3rem; margin: .3rem 0 1.2rem; box-shadow: var(--sombra); }}

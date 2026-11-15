@@ -21,16 +21,17 @@ st.pills("Me importa más:", options=list(logica.CRITERIOS), selection_mode="mul
          format_func=lambda c: f"{ICONO_CRIT[c]} {logica.CRITERIOS[c]}")
 
 if ui.falta("estrategias.csv"):
-    st.stop()
+    ui.terminar_pagina()
 comp = ui.ranking(zid, esc)
 info = {} if ui.falta("estrategias_info.json") else carga.estrategias_info()
 real = True
 if comp.empty:
     st.info("Todavía no hay planes para esta zona y este año.", icon="ℹ️")
-    st.stop()
+    ui.terminar_pagina()
 
 st.markdown(f"Para tu **{ui.corto_zona(znombre).lower()}** en un "
             f"**{juego.NOMBRE_ANIO[esc]}**. El primero es el que más te conviene.")
+ui.html(ui.confianza("recomendacion", esc))
 
 cols = st.columns(len(comp), gap="medium")
 for i, (col, (_, fila)) in enumerate(zip(cols, comp.iterrows())):

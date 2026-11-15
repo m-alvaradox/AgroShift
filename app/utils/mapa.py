@@ -13,6 +13,7 @@ import re
 from html import escape
 
 import folium
+import numpy as np
 import streamlit as st
 from branca.element import MacroElement
 from folium import plugins
@@ -91,7 +92,7 @@ def _texto(valor, decimales: int, unidad: str) -> str:
     return "sin dato" if math.isnan(v) else f"{ui.num(v, decimales)} {unidad}".strip()
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, persist="disk")  # sobrevive al reinicio del servidor
 def _preparar(ruta: str, mtime: float) -> tuple[dict, list | None, bool]:
     """Zonas en EPSG:4326, simplificadas y con textos para el popup; limites; si se reproyecto."""
     geo = carga.zonas()
@@ -135,7 +136,7 @@ def capas_raster() -> dict:
     if not indice.exists():
         return {}
     capas = carga.leer_json_archivo(indice)
-    return {k: c for k, c in capas.items() if (CAPAS_DIR / c["png"]).exists()}
+    return {k: c for k, c in capas.items() if (carga.APP_DIR / c["png"]).exists()}
 
 
 # --- Leyenda --------------------------------------------------------------------------
@@ -218,8 +219,12 @@ def construir(zid: int) -> folium.Map:
     if rasters:
         folium.map.CustomPane("rasters", z_index=350).add_to(mapa)
     for c in rasters.values():
-        ImageOverlay(str(CAPAS_DIR / c["png"]), bounds=c["limites"], name=c["nombre"], opacity=0.6,
-                     show=False, pixelated=False, interactive=False, pane="rasters").add_to(mapa)
+        # La imagen se sirve desde app/static (enableStaticServing): el mapa solo lleva la URL y no
+        # 1,5 MB incrustados. La URL es absoluta porque el mapa vive en un iframe del componente.
+        capa = ImageOverlay(np.zeros((1, 1, 4)), bounds=c["limites"], name=c["nombre"], opacity=0.6,
+                            show=False, pixelated=False, interactive=False, pane="rasters")
+        capa.url = f"/app/{c['png']}"  # folium leeria un texto como archivo local: se fija la URL despues
+        capa.add_to(mapa)
 
     # Zonas, coloreadas por tipo; la elegida, resaltada. Las zonas de P3 son muy fragmentadas
     # (muchos huecos), por eso el borde es fino y el resalte va sobre todo en el relleno.

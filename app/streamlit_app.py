@@ -26,7 +26,7 @@ PRINCIPALES = [
 # Vista tecnica: graficos y datos reales (no salen en el menu principal)
 TECNICAS = [
     st.Page("vistas/clima.py", title="Clima", icon="🌦️"),
-    st.Page("vistas/zonas.py", title="Satélite", icon="🛰️"),
+    st.Page("vistas/zonas.py", title="Mi campo", icon="🛰️"),
     st.Page("vistas/estrategias.py", title="Estrategias", icon="🌱"),
     st.Page("vistas/recomendacion.py", title="Recomendación", icon="✅"),
 ]
@@ -84,7 +84,12 @@ if es_tecnica:
             st.page_link(p, label=p.title, icon=p.icon, width="content")
         st.page_link(PRINCIPALES[0], label="Volver a Mi finca", icon="↩️", width="content")
 
-pg.run()
-
+# Las paginas que terminan antes usan ui.terminar_pagina() (no st.stop) para que el pie,
+# con el aviso de que la app no reemplaza al tecnico, salga en TODAS las paginas.
+try:
+    pg.run()
+except ui.FinDePagina:
+    pass
+ui.aviso_tecnico()
 st.divider()
-st.caption("NASA Space Apps 2026 · Reto Field Shift · Datos de NASA POWER, Landsat, SRTM y GPM")
+st.caption("NASA Space Apps 2026 · Reto Field Shift · Datos de NASA POWER, GPM IMERG, Landsat 8 y 9 y SRTM")

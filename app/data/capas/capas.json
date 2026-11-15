@@ -1,7 +1,7 @@
 {
   "elevacion": {
     "nombre": "Elevación",
-    "png": "elevacion.png",
+    "png": "static/capas/elevacion.png",
     "limites": [
       [
         -1.950485,
@@ -27,7 +27,7 @@
   },
   "pendiente": {
     "nombre": "Pendiente",
-    "png": "pendiente.png",
+    "png": "static/capas/pendiente.png",
     "limites": [
       [
         -1.950485,

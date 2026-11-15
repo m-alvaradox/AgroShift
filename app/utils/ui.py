@@ -177,9 +177,51 @@ def origen_datos(abierto: bool = False):
                    "busca en la siguiente carpeta (app/data → data/processed → data).")
 
 
+class FinDePagina(Exception):
+    """La pagina termino antes (como st.stop), pero el pie con el aviso tecnico se sigue dibujando."""
+
+
+def terminar_pagina():
+    """Usar en lugar de st.stop(): streamlit_app.py atrapa la excepcion y dibuja el pie."""
+    raise FinDePagina
+
+
 def aviso_tecnico():
-    st.caption("Agroshift te ayuda a decidir, pero no reemplaza tu experiencia ni la de un "
-               "técnico agrícola. Confirma antes de sembrar.")
+    """Se muestra al pie de TODAS las paginas (streamlit_app.py)."""
+    html('<div class="aviso-tecnico">👩‍🌾 Agroshift te ayuda a decidir, pero no reemplaza tu experiencia '
+         'ni la de un técnico agrícola. Confirma antes de sembrar.</div>')
+
+
+# --- Nivel de confianza -------------------------------------------------------------------
+# Segun la resolucion del dato y los años disponibles. (nivel, por que)
+CONFIANZA = {
+    "lluvia": ("media", "satélite de lluvia con cuadros de ~10 km y solo 5 años de datos"),
+    "agua": ("media", "clima de la NASA con cuadros de ~50 km y 5 años de datos"),
+    "verdor": ("alta", "fotos del satélite Landsat de 30 m cada mes; algunos meses sin foto por nubes"),
+    "agua_terreno": ("media", "fotos de 30 m, pero en la época de lluvias las nubes tapan varios meses"),
+    "inundacion": ("media", "junta el relieve de tu zona (30 m) con el agua que vio el satélite"),
+    "recomendacion": ("media", "agua calculada con datos reales de la NASA; algunos valores del arroz "
+                               "y del suelo aún deben validarlos técnicos"),
+    "anio_tipo": ("baja", "cada tipo de año sale de una sola temporada real: hay solo 5 años de datos"),
+    "juego": ("baja", "combinación libre: es una estimación del juego, no un cálculo con tus datos"),
+    "zonas": ("media", "relieve del satélite SRTM de 30 m; el suelo de cada finca aún no se ha medido"),
+    "calendario": ("media", "meses de lluvia de 5 años y ciclos de referencia de cada cultivo"),
+    "plan": ("baja", "calendario general por temporada; todavía no es un calendario de tu zona"),
+}
+ICONO_CONF = {"alta": "🟢", "media": "🟡", "baja": "🔴"}
+
+
+def nivel(clave: str, escenario: str | None = None) -> tuple[str, str]:
+    """Nivel y razon; en un año muy lluvioso o seco la recomendacion baja a 'baja'."""
+    if clave == "recomendacion" and escenario in ("nino", "nina"):
+        return CONFIANZA["anio_tipo"]
+    return CONFIANZA[clave]
+
+
+def confianza(clave: str, escenario: str | None = None) -> str:
+    """Etiqueta HTML: '🟡 Confianza media · por que'."""
+    n, por_que = nivel(clave, escenario)
+    return (f'<div class="conf {n}">{ICONO_CONF[n]} <b>Confianza {n}</b> · {escape(por_que)}</div>')
 
 
 def fuente(texto: str):
@@ -256,10 +298,11 @@ def etiqueta_fuente(real: bool, otra: str = "🧮 Estimación de AgroShift") -> 
     return f'<span class="tag sim">{escape(otra)}</span>'
 
 
-def semaforo(titulo: str, icono: str, s: dict, real: bool) -> str:
+def semaforo(titulo: str, icono: str, s: dict, real: bool, conf: str | None = None) -> str:
     return (f'<div class="semaforo {s["color"]}"><div class="luces"><i class="r"></i><i class="a"></i>'
             f'<i class="v"></i></div><div><div class="sem-tit">{icono} {escape(titulo)}'
-            f'<b>{escape(s["palabra"])}</b></div><p>{escape(s["texto"])}</p>{etiqueta_fuente(real)}</div></div>')
+            f'<b>{escape(s["palabra"])}</b></div><p>{escape(s["texto"])}</p>{etiqueta_fuente(real)}'
+            f'{confianza(conf) if conf else ""}</div></div>')
 
 
 def barra(nombre: str, icono: str, valor: float, color: str, palabra: str) -> str:

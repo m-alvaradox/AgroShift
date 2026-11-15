@@ -1,0 +1,61 @@
+fecha,imagenes,cobertura_pct,estado,color,ndvi
+2021-11-01,4,97.2,limpia,static/meses/2021_11_color.png,static/meses/2021_11_ndvi.png
+2021-12-01,0,0.0,sin imagen por nubes,,
+2022-01-01,2,79.2,parcial,static/meses/2022_01_color.png,static/meses/2022_01_ndvi.png
+2022-02-01,1,0.2,sin imagen por nubes,,
+2022-03-01,2,54.9,parcial,static/meses/2022_03_color.png,static/meses/2022_03_ndvi.png
+2022-04-01,2,99.1,limpia,static/meses/2022_04_color.png,static/meses/2022_04_ndvi.png
+2022-05-01,2,73.8,parcial,static/meses/2022_05_color.png,static/meses/2022_05_ndvi.png
+2022-06-01,1,0.0,sin imagen por nubes,,
+2022-07-01,0,0.0,sin imagen por nubes,,
+2022-08-01,0,0.0,sin imagen por nubes,,
+2022-09-01,2,47.0,parcial,static/meses/2022_09_color.png,static/meses/2022_09_ndvi.png
+2022-10-01,3,56.2,parcial,static/meses/2022_10_color.png,static/meses/2022_10_ndvi.png
+2022-11-01,2,99.6,limpia,static/meses/2022_11_color.png,static/meses/2022_11_ndvi.png
+2022-12-01,2,48.9,parcial,static/meses/2022_12_color.png,static/meses/2022_12_ndvi.png
+2023-01-01,3,5.7,sin imagen por nubes,,
+2023-02-01,2,64.5,parcial,static/meses/2023_02_color.png,static/meses/2023_02_ndvi.png
+2023-03-01,4,60.4,parcial,static/meses/2023_03_color.png,static/meses/2023_03_ndvi.png
+2023-04-01,3,50.0,parcial,static/meses/2023_04_color.png,static/meses/2023_04_ndvi.png
+2023-05-01,3,72.4,parcial,static/meses/2023_05_color.png,static/meses/2023_05_ndvi.png
+2023-06-01,1,59.5,parcial,static/meses/2023_06_color.png,static/meses/2023_06_ndvi.png
+2023-07-01,3,77.9,parcial,static/meses/2023_07_color.png,static/meses/2023_07_ndvi.png
+2023-08-01,2,96.2,limpia,static/meses/2023_08_color.png,static/meses/2023_08_ndvi.png
+2023-09-01,4,90.9,limpia,static/meses/2023_09_color.png,static/meses/2023_09_ndvi.png
+2023-10-01,2,85.5,limpia,static/meses/2023_10_color.png,static/meses/2023_10_ndvi.png
+2023-11-01,1,56.3,parcial,static/meses/2023_11_color.png,static/meses/2023_11_ndvi.png
+2023-12-01,1,0.0,sin imagen por nubes,,
+2024-01-01,2,0.0,sin imagen por nubes,,
+2024-02-01,1,0.0,sin imagen por nubes,,
+2024-03-01,3,83.5,limpia,static/meses/2024_03_color.png,static/meses/2024_03_ndvi.png
+2024-04-01,2,91.9,limpia,static/meses/2024_04_color.png,static/meses/2024_04_ndvi.png
+2024-05-01,2,94.4,limpia,static/meses/2024_05_color.png,static/meses/2024_05_ndvi.png
+2024-06-01,3,72.1,parcial,static/meses/2024_06_color.png,static/meses/2024_06_ndvi.png
+2024-07-01,1,41.1,parcial,static/meses/2024_07_color.png,static/meses/2024_07_ndvi.png
+2024-08-01,1,100.0,limpia,static/meses/2024_08_color.png,static/meses/2024_08_ndvi.png
+2024-09-01,2,71.7,parcial,static/meses/2024_09_color.png,static/meses/2024_09_ndvi.png
+2024-10-01,3,59.8,parcial,static/meses/2024_10_color.png,static/meses/2024_10_ndvi.png
+2024-11-01,1,1.0,sin imagen por nubes,,
+2024-12-01,4,99.7,limpia,static/meses/2024_12_color.png,static/meses/2024_12_ndvi.png
+2025-01-01,2,65.5,parcial,static/meses/2025_01_color.png,static/meses/2025_01_ndvi.png
+2025-02-01,0,0.0,sin imagen por nubes,,
+2025-03-01,2,31.0,parcial,static/meses/2025_03_color.png,static/meses/2025_03_ndvi.png
+2025-04-01,3,47.7,parcial,static/meses/2025_04_color.png,static/meses/2025_04_ndvi.png
+2025-05-01,2,89.9,limpia,static/meses/2025_05_color.png,static/meses/2025_05_ndvi.png
+2025-06-01,2,99.3,limpia,static/meses/2025_06_color.png,static/meses/2025_06_ndvi.png
+2025-07-01,1,81.2,limpia,static/meses/2025_07_color.png,static/meses/2025_07_ndvi.png
+2025-08-01,1,25.2,parcial,static/meses/2025_08_color.png,static/meses/2025_08_ndvi.png
+2025-09-01,3,100.0,limpia,static/meses/2025_09_color.png,static/meses/2025_09_ndvi.png
+2025-10-01,1,79.0,parcial,static/meses/2025_10_color.png,static/meses/2025_10_ndvi.png
+2025-11-01,2,100.0,limpia,static/meses/2025_11_color.png,static/meses/2025_11_ndvi.png
+2025-12-01,3,83.3,limpia,static/meses/2025_12_color.png,static/meses/2025_12_ndvi.png
+2026-01-01,1,20.7,parcial,static/meses/2026_01_color.png,static/meses/2026_01_ndvi.png
+2026-02-01,1,7.4,sin imagen por nubes,,
+2026-03-01,3,93.1,limpia,static/meses/2026_03_color.png,static/meses/2026_03_ndvi.png
+2026-04-01,4,86.7,limpia,static/meses/2026_04_color.png,static/meses/2026_04_ndvi.png
+2026-05-01,4,60.9,parcial,static/meses/2026_05_color.png,static/meses/2026_05_ndvi.png
+2026-06-01,1,6.3,sin imagen por nubes,,
+2026-07-01,2,24.0,parcial,static/meses/2026_07_color.png,static/meses/2026_07_ndvi.png
+2026-08-01,2,36.1,parcial,static/meses/2026_08_color.png,static/meses/2026_08_ndvi.png
+2026-09-01,3,94.0,limpia,static/meses/2026_09_color.png,static/meses/2026_09_ndvi.png
+2026-10-01,3,64.2,parcial,static/meses/2026_10_color.png,static/meses/2026_10_ndvi.png

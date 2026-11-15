@@ -89,8 +89,15 @@ escenario = tipo if tipo != "todos" else "normal"
 nombre_anio = ui.NOMBRE_ESC[escenario].lower()
 zona_txt = "todo Daule" if zid == 0 else f"la {ui.corto_zona(nombres_zona[zid]).lower()}"
 
-completa = tb.tabla_mensual(imerg, power, serie_todo[serie_todo["zona_id"] == 0] if serie_todo is not None
-                            else None, clim)
+def serie_de(z: int):
+    """Serie del satelite de la zona elegida; si aun no hay por zona, la de todo Daule (zona 0)."""
+    if serie_todo is None:
+        return None
+    s = serie_todo[serie_todo["zona_id"] == z]
+    return s if not s.empty else serie_todo[serie_todo["zona_id"] == 0]
+
+
+completa = tb.tabla_mensual(imerg, power, serie_de(zid), clim)
 t = tb.filtrar(completa, periodo, tipo)
 est_z = tb.estrategias_zona(est, zonas, zid) if est is not None else None
 tipos_mes = tb.tipos_mes(clim)
@@ -192,10 +199,17 @@ if t.empty and not completa.empty:
             icon="ℹ️")
 
 
+CONF_TARJETA = {"Lluvia del periodo": "lluvia", "Meses secos del año": "agua", "Verdor del campo": "verdor",
+                "Meses con agua en el terreno": "agua_terreno", "Hectáreas de la zona": "zonas",
+                "Plan recomendado": "recomendacion"}
+
+
 def tarjeta(color: str, icono: str, titulo: str, numero: str, cuerpo: str, frase_: str) -> str:
+    conf = CONF_TARJETA.get(titulo)
+    pie = ui.confianza(conf, escenario) if conf and numero != "—" else ""
     return (f'<div class="picto {color}"><div class="picto-cab"><span class="picto-ico">{icono}</span>'
             f'<span class="picto-tit">{titulo}</span></div><div class="picto-num">{numero}</div>'
-            f'{cuerpo}<div class="picto-frase">{frase_}</div></div>')
+            f'{cuerpo}<div class="picto-frase">{frase_}</div>{pie}</div>')
 
 
 def tarjeta_falta(color: str, icono: str, titulo: str, archivo: str) -> str:
@@ -274,8 +288,8 @@ if recomendada:
 else:
     tarjetas.append(tarjeta_falta("verde", "✅", "Plan recomendado", "estrategias.csv"))
 ui.html(f'<div class="picto-grid">{"".join(tarjetas)}</div>')
-fuente("GPM IMERG y NASA POWER (P1, Mario) · Landsat 8 y 9 (P2, Thomas) · SRTM (P3, Austin) · "
-       "estrategias FAO-56 (P1 y P4, Johan).")
+fuente("satélites de la NASA: GPM IMERG y NASA POWER (lluvia y clima), Landsat 8 y 9 (fotos del campo) y "
+       "SRTM (relieve). Quién procesó cada dato: «Ver datos técnicos», al final de la página.")
 if zid and serie_todo is not None and not (serie_todo["zona_id"] == zid).any():
     st.caption("🛰️ El verdor y el agua en el terreno todavía son el promedio de todo Daule.")
 
@@ -333,7 +347,7 @@ with st.container(key="dash_anio"):
             ley_temporadas()
             descargas["lluvia_mensual"] = d[[c for c in ("fecha", "lluvia_imerg_mm", "lluvia_power_mm",
                                                          "normal_mm") if c in d]]
-    fuente("año típico con NASA POWER; lluvia de cada mes con GPM IMERG V07, procesados por P1 (Mario). "
+    fuente("año típico con NASA POWER; lluvia de cada mes con el satélite GPM IMERG de la NASA. "
            "Lo normal = mediana de cada mes entre 2021 y 2026. En rojo, los meses con muchísima más lluvia.")
 
 
@@ -372,7 +386,7 @@ def graf_balance():
     ui.html(f'<div class="graf-ley"><i style="background:{ui.HOJA}"></i>Sobra agua'
             f'<i style="background:{ui.SECA}"></i>Falta agua · fondo: '
             '<i style="background:#DCEBFA"></i>lluvias<i style="background:#FDF0D3"></i>seca</div>')
-    fuente("NASA POWER: lluvia menos el agua que se evapora (Hargreaves, FAO-56), P1 (Mario).")
+    fuente("NASA POWER: lluvia menos el agua que se evapora, calculada con la temperatura de cada día.")
     descargas["balance_agua"] = d[["fecha", "lluvia_power_mm", "et0_mm", "balance_mm"]].rename(
         columns={"et0_mm": "agua_que_se_evapora_mm"})
 
@@ -412,7 +426,7 @@ def graf_verdor():
     mostrar(estilo(fig, alto=300))
     ui.html('<div class="graf-ley">0 = suelo pelado · 0,8 = muy verde · ☁️ = sin foto por nubes · fondo: '
             '<i style="background:#DCEBFA"></i>lluvias<i style="background:#FDF0D3"></i>seca</div>')
-    fuente("Landsat 8 y 9 (verdor = NDVI), procesado por P2 (Thomas); promedio de todo Daule.")
+    fuente("fotos del satélite Landsat 8 y 9 de la NASA, una por mes.")
     descargas["verdor"] = d.rename(columns={"ndvi": "verdor_ndvi"})
 
 
@@ -425,23 +439,41 @@ def graf_inundacion():
         st.info("Sin meses con foto en el periodo elegido.", icon="ℹ️")
         return
     seccion("💧", "¿Cuándo se inunda?", tb.frase_inundacion(t))
-    base = t[["fecha", "ndwi"]].assign(anio=t["fecha"].dt.year, mes=t["fecha"].dt.month)
-    tabla = base.pivot_table(index="anio", columns="mes", values="ndwi", aggfunc="mean", dropna=False)
+    # Con pct_agua (% de la zona con NDWI > 0) se ve mucho mejor que con el NDWI promedio
+    con_pct = "pct_agua" in t and t["pct_agua"].notna().any()
+    valor = "pct_agua" if con_pct else "ndwi"
+    umbral = logica.UMBRAL_AGUA_PCT if con_pct else 0.0
+
+    def hay_agua(v):
+        return v >= umbral if con_pct else v > 0
+
+    base = t[["fecha", valor]].assign(anio=t["fecha"].dt.year, mes=t["fecha"].dt.month)
+    tabla = base.pivot_table(index="anio", columns="mes", values=valor, aggfunc="mean", dropna=False)
     tabla = tabla.reindex(columns=range(1, 13))
     meses_con_dato = set(zip(base["anio"], base["mes"]))
-    texto = [[(f"{logica.MESES[m - 1].lower()} {a}: " +
-               ("sin foto (nubes)" if pd.isna(val) else f"{tb.num(val, 2)} · {'💧 hay agua' if val > 0 else 'seco'}"))
-              for m, val in zip(tabla.columns, fila_)] for a, fila_ in zip(tabla.index, tabla.values)]
-    lim = max(0.3, float(d["ndwi"].abs().max()))
+
+    def describir(val):
+        if pd.isna(val):
+            return "sin foto (nubes)"
+        cantidad = f"{tb.num(val, 1)} % de la zona con agua" if con_pct else tb.num(val, 2)
+        return f"{cantidad} · {'💧 hay agua' if hay_agua(val) else 'seco'}"
+
+    texto = [[f"{logica.MESES[m - 1].lower()} {a}: {describir(val)}" for m, val in zip(tabla.columns, fila_)]
+             for a, fila_ in zip(tabla.index, tabla.values)]
     anios = [str(a) for a in tabla.index]
-    fig = go.Figure(go.Heatmap(
-        z=tabla.values, x=logica.MESES, y=anios, customdata=texto, zmin=-lim, zmax=lim, zmid=0,
-        xgap=3, ygap=3, showscale=False, hovertemplate="%{customdata}<extra></extra>",
-        colorscale=[[0, "#A1887F"], [0.45, "#EFE6DA"], [0.5, "#F7F7F7"], [0.55, "#BBDEFB"], [1, "#1565C0"]]))
+    if con_pct:
+        tope = max(10.0, float(d["pct_agua"].max()))
+        escala = dict(zmin=0, zmax=tope, colorscale=[[0, "#F3EDE4"], [0.15, "#E3F2FD"], [1, "#1565C0"]])
+    else:
+        lim = max(0.3, float(d["ndwi"].abs().max()))
+        escala = dict(zmin=-lim, zmax=lim, zmid=0, colorscale=[[0, "#A1887F"], [0.45, "#EFE6DA"],
+                                                               [0.5, "#F7F7F7"], [0.55, "#BBDEFB"], [1, "#1565C0"]])
+    fig = go.Figure(go.Heatmap(z=tabla.values, x=logica.MESES, y=anios, customdata=texto, xgap=3, ygap=3,
+                               showscale=False, hovertemplate="%{customdata}<extra></extra>", **escala))
     # 💧 donde hubo agua sobre el terreno y ☁️ donde las nubes taparon la foto
-    marcas = [(logica.MESES[m - 1], str(a), "💧" if v > 0 else "☁️")
+    marcas = [(logica.MESES[m - 1], str(a), "💧" if hay_agua(v) else "☁️")
               for a, fila_ in zip(tabla.index, tabla.values) for m, v in zip(tabla.columns, fila_)
-              if (a, m) in meses_con_dato and (pd.isna(v) or v > 0)]
+              if (a, m) in meses_con_dato and (pd.isna(v) or hay_agua(v))]
     if marcas:
         fig.add_scatter(x=[m[0] for m in marcas], y=[m[1] for m in marcas], text=[m[2] for m in marcas],
                         mode="text", textfont=dict(size=16), hoverinfo="skip")
@@ -449,10 +481,15 @@ def graf_inundacion():
     fig.update_xaxes(type="category", tickangle=0)
     fig.update_yaxes(autorange="reversed", type="category")
     mostrar(estilo(fig, alto=110 + 42 * len(anios)))
-    ui.html('<div class="graf-ley"><i style="background:#A1887F"></i>Seco<i style="background:#F7F7F7"></i>'
-            'Húmedo<i style="background:#1565C0"></i>Agua · 💧 = agua en el terreno · ☁️ = nubes</div>')
-    fuente("Landsat 8 y 9 (agua en el terreno = NDWI), procesado por P2 (Thomas); promedio de todo Daule.")
-    descargas["agua_en_terreno"] = d[["fecha", "ndwi"]].rename(columns={"ndwi": "agua_en_terreno_ndwi"})
+    if con_pct:
+        ui.html('<div class="graf-ley"><i style="background:#F3EDE4"></i>Sin agua<i style="background:#1565C0"></i>'
+                f'Más agua · 💧 = {tb.num(umbral)} % o más de la zona con agua · ☁️ = nubes</div>')
+    else:
+        ui.html('<div class="graf-ley"><i style="background:#A1887F"></i>Seco<i style="background:#F7F7F7"></i>'
+                'Húmedo<i style="background:#1565C0"></i>Agua · 💧 = agua en el terreno · ☁️ = nubes</div>')
+    fuente("fotos del satélite Landsat 8 y 9 de la NASA: parte del terreno con agua encima cada mes.")
+    descargas["agua_en_terreno"] = d[[c for c in ("fecha", "ndwi", "pct_agua") if c in d]].rename(
+        columns={"ndwi": "agua_en_terreno_ndwi", "pct_agua": "pct_zona_con_agua"})
 
 
 def graf_temporadas():
@@ -487,7 +524,7 @@ def graf_temporadas():
     fig.update_yaxes(categoryorder="array", categoryarray=list(temp["etiqueta"]), autorange="reversed")
     mostrar(estilo(fig, alto=60 + 44 * len(temp)))
     ui.html('<div class="graf-ley">🌧️ Año muy lluvioso · 🌤️ Año normal · ☀️ Año seco</div>')
-    fuente("GPM IMERG V07, lluvia de diciembre a mayo de cada año agrícola; procesado por P1 (Mario).")
+    fuente("satélite GPM IMERG de la NASA: lluvia de diciembre a mayo de cada año agrícola.")
     descargas["temporadas_lluvia"] = temp[["temporada", "lluvia_temporada_mm"]].assign(
         tipo_de_anio=temp["escenario"].map(ui.NOMBRE_ESC))
 
@@ -520,7 +557,8 @@ def graf_estrategias():
             f'<div class="graf-ley">Cada 💧 = 1.000 m³ de agua de riego por hectárea y por ciclo · '
             f'{ICONO_ANIO[escenario]} {ui.NOMBRE_ESC[escenario]} · Zona: {zona_}<br>'
             '🌾 arroz · 🫘 soya · 🌽 maíz</div>')
-    fuente("Balance de agua FAO-56 con NASA POWER y los años de GPM IMERG (P1, Mario) y reglas de P4 (Johan).")
+    fuente("cálculo de agua de AgroShift con el clima de la NASA y el método de la FAO (agencia de la ONU para la "
+           "agricultura), y reglas de campo del equipo.")
     descargas["agua_estrategias"] = est_z[["estrategia", "escenario", "agua_m3_ha", "nota_agua", "nota_suelo",
                                           "nota_plagas", "nota_ingresos"]].assign(
         escenario=lambda x: x["escenario"].map(ui.NOMBRE_ESC))
@@ -543,7 +581,7 @@ def graf_zonas():
     fig.update_layout(annotations=[dict(text=f"<b>{tb.num(total)}</b><br>hectáreas", showarrow=False,
                                         font=dict(size=14, family=FUENTE["family"]))])
     mostrar(estilo(fig, alto=300, leyenda=True))
-    fuente("Elevación y pendiente de SRTM (NASA) agrupadas con K-means, procesado por P3 (Austin).")
+    fuente("relieve del satélite SRTM de la NASA; las zonas se agruparon por altura y pendiente.")
     descargas["zonas_hectareas"] = zonas[["zona_id", "nombre_comun", "area_ha"]]
 
 
@@ -572,7 +610,7 @@ def graf_relieve():
     fig.update_xaxes(tickangle=0, tickfont=dict(size=12))
     fig.update_layout(uniformtext=dict(minsize=12, mode="show"))  # que plotly no achique los textos
     mostrar(fig)
-    fuente("SRTM (NASA), procesado por P3 (Austin). Pendiente en grados según su código (por confirmar con P3).")
+    fuente("relieve del satélite SRTM de la NASA. Pendiente en grados.")
     descargas["altura_pendiente"] = zonas[["zona_id", "nombre_comun", "elevacion", "pendiente"]]
 
 

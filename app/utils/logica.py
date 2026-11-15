@@ -10,6 +10,18 @@ from datetime import date
 
 import pandas as pd
 
+# Un mes "con agua sobre el terreno" si al menos este % de la zona tiene NDWI > 0
+# (columna pct_agua de scripts/series_por_zona.py). Si no hay pct_agua, se usa NDWI medio > 0.
+UMBRAL_AGUA_PCT = 5.0
+
+
+def meses_con_agua(serie: pd.DataFrame) -> pd.DataFrame:
+    """Filas de la serie con agua sobre el terreno."""
+    if "pct_agua" in serie and serie["pct_agua"].notna().any():
+        return serie[serie["pct_agua"] >= UMBRAL_AGUA_PCT]
+    return serie[serie["ndwi"] > 0]
+
+
 CRITERIOS = {
     "nota_agua": "Ahorrar agua",
     "nota_suelo": "Cuidar el suelo",
@@ -173,7 +185,7 @@ def calendario(clim: pd.DataFrame, cult: pd.DataFrame, serie_zona: pd.DataFrame,
     """Calendario por cultivo con riesgo de encharcamiento (se usa en Mi campo)."""
     inicio, seca = temporadas(clim)
     s = serie_zona.dropna(subset=["ndwi"]).assign(mes=lambda d: d["fecha"].dt.month - 1)
-    anios_agua = s[s["ndwi"] > 0].groupby("mes")["fecha"].apply(lambda f: f.dt.year.nunique())
+    anios_agua = meses_con_agua(s).groupby("mes")["fecha"].apply(lambda f: f.dt.year.nunique())
     filas, notas = {}, []
     loma = "loma" in zona_nombre.lower()
     for _, c in cult.iterrows():

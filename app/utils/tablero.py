@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from utils.logica import MESES, MESES_LARGOS
+from utils.logica import MESES, MESES_LARGOS, UMBRAL_AGUA_PCT, meses_con_agua
 
 PERIODOS = {"1": "Último año", "2": "Últimos 2 años", "todo": "Todo (2021–2026)"}
 TIPOS = {"todos": "Todos", "nino": "🌧️ Muy lluvioso", "normal": "🌤️ Normal", "nina": "☀️ Seco"}
@@ -63,7 +63,7 @@ def tabla_mensual(imerg: pd.DataFrame | None, power: pd.DataFrame | None,
         partes.append(power[["fecha", "lluvia_mm", "et0_mm", "balance_mm"]]
                       .rename(columns={"lluvia_mm": "lluvia_power_mm"}))
     if serie is not None:
-        partes.append(serie[["fecha", "ndvi", "ndwi"]])
+        partes.append(serie[[c for c in ("fecha", "ndvi", "ndwi", "pct_agua") if c in serie]])
     if not partes:
         return pd.DataFrame(columns=["fecha"])
     t = partes[0]
@@ -154,9 +154,13 @@ def kpi_agua(t: pd.DataFrame) -> dict | None:
     d = t.dropna(subset=["ndwi"]) if "ndwi" in t else None
     if d is None or d.empty:
         return None
-    n = int((d["ndwi"] > 0).sum())
-    frase = (f"de {len(d)} meses con foto del satélite" if n else
-             f"en {len(d)} meses con foto el satélite no vio agua acumulada")
+    n = len(meses_con_agua(d))
+    con_pct = "pct_agua" in d and d["pct_agua"].notna().any()
+    if n:
+        frase = (f"de {len(d)} meses con foto, con agua en {num(UMBRAL_AGUA_PCT)} % o más de la zona"
+                 if con_pct else f"de {len(d)} meses con foto del satélite")
+    else:
+        frase = f"en {len(d)} meses con foto el satélite no vio agua acumulada"
     return {"valor": str(n), "unidad": "meses", "frase": frase}
 
 
@@ -251,14 +255,20 @@ def frase_inundacion(t: pd.DataFrame) -> str:
     d = t.dropna(subset=["ndwi"]) if "ndwi" in t else pd.DataFrame()
     if d.empty:
         return "Las nubes no dejaron ver el agua en el periodo elegido."
-    con_agua = d[d["ndwi"] > 0]
+    con_agua = meses_con_agua(d)
+    con_pct = "pct_agua" in d and d["pct_agua"].notna().any()
     if con_agua.empty:
-        mas = d.loc[d["ndwi"].idxmax()]
-        return ("En el promedio de todo Daule el satélite no vio agua sobre el terreno. "
+        col = "pct_agua" if con_pct else "ndwi"
+        mas = d.loc[d[col].idxmax()]
+        return ("El satélite no vio agua sobre el terreno en el periodo elegido. "
                 f"El mes más húmedo fue {mes_largo(mas['fecha'])}.")
     meses = con_agua["fecha"].dt.month.value_counts()
-    return (f"Se vio agua en el terreno en {len(con_agua)} meses, sobre todo en "
-            f"{MESES_LARGOS[meses.index[0] - 1]}.")
+    frase = (f"Se vio agua en el terreno en {len(con_agua)} meses, sobre todo en "
+             f"{MESES_LARGOS[meses.index[0] - 1]}.")
+    if con_pct:
+        tope = con_agua.loc[con_agua["pct_agua"].idxmax()]
+        frase += f" El máximo fue {mes_largo(tope['fecha'])}: el {num(tope['pct_agua'])} % de la zona con agua."
+    return frase
 
 
 def frase_temporadas(temp: pd.DataFrame) -> str:
@@ -422,7 +432,7 @@ def conclusiones(completa: pd.DataFrame, clim: pd.DataFrame | None, est_z: pd.Da
                                "texto": f"En {zona_txt}, en un {nombre_anio}, el plan {mejor['estrategia']} "
                                         f"usa {num(ahorro)}\u00a0% menos agua de riego que sembrar solo "
                                         "arroz todo el año.",
-                               "fuente": "Balance FAO-56 (P1) y reglas de P4"})
+                               "fuente": "Cálculo de agua de AgroShift con datos de la NASA"})
     if zonas is not None and not zonas.empty:
         total = zonas["area_ha"].sum()
         grande = zonas.loc[zonas["area_ha"].idxmax()]
@@ -433,5 +443,5 @@ def conclusiones(completa: pd.DataFrame, clim: pd.DataFrame | None, est_z: pd.Da
             texto += (f"; la {corto(alta['nombre_comun']).lower()}, la parte más alta "
                       f"({num(alta['elevacion'], 1)} m), es el {num(alta['area_ha'] / total * 100)}\u00a0%")
         salida.append({"icono": "🗺️", "titulo": "Un territorio casi plano", "texto": texto + ".",
-                       "fuente": "SRTM (P3)"})
+                       "fuente": "Relieve del satélite SRTM de la NASA"})
     return salida

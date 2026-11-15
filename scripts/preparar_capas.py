@@ -27,7 +27,8 @@ from rasterio.warp import Resampling, calculate_default_transform, reproject
 
 ROOT = Path(__file__).resolve().parents[1]
 PROC = ROOT / "data" / "processed"
-SALIDA = ROOT / "app" / "data" / "capas"
+SALIDA = ROOT / "app" / "data" / "capas"      # capas.json (limites y leyenda)
+PNG_DIR = ROOT / "app" / "static" / "capas"   # PNG servidos por Streamlit en app/static/capas/
 DESTINO = "EPSG:4326"
 NIVELES = 64  # colores de la paleta: menos niveles = PNG mas liviano, se ve igual
 
@@ -80,6 +81,7 @@ def a_png(datos: np.ndarray, colores: list[str], vmin: float, vmax: float, desti
 
 def main() -> None:
     SALIDA.mkdir(parents=True, exist_ok=True)
+    PNG_DIR.mkdir(parents=True, exist_ok=True)
     capas = dict(CAPAS)
     ndvi = ultimo_ndvi()
     if ndvi:
@@ -96,10 +98,10 @@ def main() -> None:
             print(f"  [ vacio ]  {ruta.name}: no tiene pixeles validos")
             continue
         vmin, vmax = rango or (float(np.percentile(validos, 2)), float(np.percentile(validos, 98)))
-        png = SALIDA / f"{clave}.png"
+        png = PNG_DIR / f"{clave}.png"
         a_png(datos, colores, vmin, vmax, png)
         info[clave] = {
-            "nombre": titulo, "png": png.name, "limites": limites, "unidad": unidad,
+            "nombre": titulo, "png": png.relative_to(ROOT / "app").as_posix(), "limites": limites, "unidad": unidad,
             "min": round(vmin, 2), "max": round(vmax, 2), "colores": colores,
             "fuente": ruta.relative_to(ROOT).as_posix(),
         }

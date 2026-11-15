@@ -14,3 +14,5 @@ buttonRadius = "14px"
 
 [server]
 headless = true
+# sirve app/static/ en la URL app/static/... (miniaturas de cada mes del satelite)
+enableStaticServing = true
