@@ -1,11 +1,10 @@
 """Mi finca: frase resumen, 3 semaforos, el año mes a mes y acceso al juego."""
 from datetime import date
 
-import folium
 import streamlit as st
 from streamlit_folium import st_folium
 
-from utils import carga, juego, ui
+from utils import carga, juego, mapa, ui
 
 zid, znombre = ui.zona_actual()
 tipo = ui.tipo_zona(znombre)
@@ -48,39 +47,13 @@ with der:
                 '<p>Elige qué sembrar en cada temporada y mira cómo te iría en el año.</p>')
         st.page_link("vistas/jugar.py", label="Jugar ahora", icon="▶️", width="stretch")
 
-# --- Mapa (opcional) -------------------------------------------------------------------------
-with st.expander("🗺️ Ver mi zona en el mapa"):
-    geo = carga.zonas()
-
-    def puntos(coords):
-        """Todos los [lon, lat] de un Polygon o MultiPolygon (cualquier nivel de anidado)."""
-        if coords and isinstance(coords[0], (int, float)):
-            yield coords
-        else:
-            for c in coords:
-                yield from puntos(c)
-
-    todos = [p for f in geo["features"] for p in puntos(f["geometry"]["coordinates"])]
-    lons = [p[0] for p in todos]
-    lats = [p[1] for p in todos]
-    mapa = folium.Map(location=[sum(lats) / len(lats), sum(lons) / len(lons)],
-                      zoom_start=12, tiles=None, control_scale=True)
-    folium.TileLayer(
-        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        attr="Esri World Imagery", name="Satélite").add_to(mapa)
-    folium.TileLayer("OpenStreetMap", name="Mapa").add_to(mapa)
-
-    def estilo_zona(feature):
-        elegida = feature["properties"]["zona_id"] == zid
-        return {"fillColor": ui.color_zona(feature["properties"].get("nombre_comun", "")),
-                "color": "#fff" if elegida else "#333", "weight": 4 if elegida else 1,
-                "fillOpacity": 0.5 if elegida else 0.2}
-
-    folium.GeoJson(geo, name="Zonas", style_function=estilo_zona,
-                   tooltip=folium.GeoJsonTooltip(fields=["nombre_comun"], aliases=["Zona"])).add_to(mapa)
-    mapa.fit_bounds([[min(lats), min(lons)], [max(lats), max(lons)]])
-    st_folium(mapa, height=380, use_container_width=True, returned_objects=[])
-    st.caption("Tu zona se ve resaltada.")
+# --- Mapa de las zonas (siempre visible) -----------------------------------------------------
+st.subheader("🗺️ Tu zona en el mapa")
+# returned_objects=[]: mover o tocar el mapa no recarga la pagina
+st_folium(mapa.construir(zid), height=520, use_container_width=True, returned_objects=[],
+          key="mapa_finca")
+st.caption(f"Resaltada: {ui.etiqueta_zona(znombre)}. Toca una zona para ver sus datos. Con el "
+           "botón de capas (arriba a la derecha) puedes ver la elevación o la pendiente.")
 
 # --- Pie --------------------------------------------------------------------------------------
 if carga.archivos_mock():

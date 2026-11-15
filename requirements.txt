@@ -8,6 +8,7 @@ numpy>=1.26
 plotly>=5.20
 folium>=0.17
 streamlit-folium>=0.22
+shapely>=2.0             # simplificar las zonas del mapa (app/utils/mapa.py)
 
 # Scripts de datos (NASA POWER, SRTM, graficos)
 requests>=2.31

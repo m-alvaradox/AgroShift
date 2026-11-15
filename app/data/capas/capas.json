@@ -1,0 +1,53 @@
+{
+  "elevacion": {
+    "nombre": "Elevación",
+    "png": "elevacion.png",
+    "limites": [
+      [
+        -1.950485,
+        -80.100238
+      ],
+      [
+        -1.699704,
+        -79.849457
+      ]
+    ],
+    "unidad": "m",
+    "min": 0.81,
+    "max": 23.62,
+    "colores": [
+      "#1a9850",
+      "#a6d96a",
+      "#fee08b",
+      "#d8a463",
+      "#8c510a",
+      "#543005"
+    ],
+    "fuente": "data/processed/elevacion_daule_utm.tif"
+  },
+  "pendiente": {
+    "nombre": "Pendiente",
+    "png": "pendiente.png",
+    "limites": [
+      [
+        -1.950485,
+        -80.100238
+      ],
+      [
+        -1.699704,
+        -79.849457
+      ]
+    ],
+    "unidad": "°",
+    "min": 0.66,
+    "max": 7.76,
+    "colores": [
+      "#ffffff",
+      "#fcbba1",
+      "#fb6a4a",
+      "#cb181d",
+      "#67000d"
+    ],
+    "fuente": "data/processed/pendiente_daule.tif"
+  }
+}
