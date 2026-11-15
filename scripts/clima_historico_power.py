@@ -10,7 +10,7 @@ Que hace:
      de transicion o secos.
 
 Uso (desde la carpeta raiz del proyecto, con el venv activado):
-    python src/clima_power.py
+    python scripts/clima_historico_power.py
 
 Salidas:
     data/raw/power_diario_daule.csv          datos diarios tal como llegan
