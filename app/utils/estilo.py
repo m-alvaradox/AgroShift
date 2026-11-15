@@ -296,34 +296,77 @@ button[data-variant="pills"][aria-pressed="true"] p {{ color: #fff !important; }
 .estrellas {{ color: #C9A227; font-size: 1.35rem; letter-spacing: .08em; }}
 .gotas {{ font-size: 1.1rem; letter-spacing: .05em; }}
 
-/* ---------- Dashboard ---------- */
-.st-key-filtros_dash {{ background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
-                       padding: .6rem .9rem .8rem; margin-bottom: .4rem; }}
-.st-key-filtros_dash label p {{ font-weight: 800; color: #1B4D20; }}
-.kpis {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: .5rem 0 1rem; }}
-.kpi {{ background: #fff; border-radius: var(--radio); box-shadow: var(--sombra); padding: .85rem 1rem;
-       border-top: 6px solid var(--verde); min-width: 0; }}
-.kpi.azul {{ border-top-color: var(--azul); }}
-.kpi.amarillo {{ border-top-color: var(--amarillo); }}
-.kpi.marron {{ border-top-color: var(--marron); }}
-.kpi-ico {{ font-size: 1.6rem; line-height: 1; }}
-.kpi-tit {{ font-size: .9rem; font-weight: 800; color: #5B6B5E; margin-top: .35rem; }}
-.kpi-num {{ font-size: 1.9rem; font-weight: 900; color: #1B4D20; line-height: 1.15; overflow-wrap: anywhere; }}
-.kpi-num small {{ font-size: 1rem; font-weight: 700; color: #5B6B5E; }}
-.kpi-frase {{ font-size: .92rem; line-height: 1.3; color: #3E4E40; margin-top: .15rem; }}
-.flecha.sube {{ color: var(--verde); }}
-.flecha.baja {{ color: var(--rojo); }}
-[class*="st-key-graf_"] {{ background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
-                          padding: .9rem 1rem .7rem; height: 100%; }}
-.graf-tit {{ font-size: 1.18rem; font-weight: 900; color: #1B4D20; line-height: 1.25; }}
-.graf-sub {{ font-size: .92rem; color: #5B6B5E; margin: .1rem 0 .2rem; }}
-.graf-ley {{ font-size: .85rem; color: #3E4E40; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .4rem; }}
-.graf-ley i {{ display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-left: .3rem; }}
-.conclusion {{ background: var(--verde-fondo); border-radius: 12px; padding: .55rem .8rem; font-weight: 700;
-              font-size: 1rem; line-height: 1.35; color: #1B4D20; margin: .35rem 0 .3rem; }}
-.dash-pie {{ font-size: .9rem; color: #5B6B5E; margin: 1rem 0 .4rem; }}
+/* ---------- Dashboard ilustrativo ---------- */
+.hero {{ background: linear-gradient(135deg, #1B4D20 0%, #2E7D32 55%, #4E8B3A 100%); color: #fff;
+        border-radius: 26px; padding: 1.6rem 1.7rem 1.3rem; margin: .3rem 0 1.2rem; box-shadow: var(--sombra); }}
+.hero-sat {{ font-size: .95rem; font-weight: 700; opacity: .85; }}
+.hero-tit {{ font-size: 2.5rem; font-weight: 900; line-height: 1.08; letter-spacing: -.02em; margin: .2rem 0 .5rem; }}
+.hero-frase {{ font-size: 1.3rem; font-weight: 700; line-height: 1.35; color: #FFF8E1; max-width: 46rem; }}
+.chips {{ display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .9rem; }}
+.chips span {{ background: rgba(255,255,255,.16); border-radius: 999px; padding: .2rem .7rem; font-size: .9rem; font-weight: 700; }}
+.chips .chip-ayuda {{ background: transparent; opacity: .8; font-weight: 600; }}
+.picto-grid {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: .2rem 0 .5rem; }}
+.picto {{ background: #fff; border-radius: var(--radio); box-shadow: var(--sombra); padding: 1.1rem 1.15rem 1rem;
+         border-top: 6px solid var(--verde); min-width: 0; display: flex; flex-direction: column; gap: .35rem; }}
+.picto.azul {{ border-top-color: var(--azul); }}
+.picto.amarillo {{ border-top-color: var(--amarillo); }}
+.picto.marron {{ border-top-color: var(--marron); }}
+.picto-cab {{ display: flex; align-items: center; gap: .55rem; }}
+.picto-ico {{ font-size: 2.2rem; line-height: 1; }}
+.picto-tit {{ font-size: 1rem; font-weight: 800; color: #5B6B5E; line-height: 1.2; }}
+.picto-num {{ font-size: 2.3rem; font-weight: 900; color: #1B4D20; line-height: 1.05; }}
+.picto-num small {{ font-size: 1.05rem; font-weight: 700; color: #5B6B5E; }}
+.picto-fila {{ display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .5rem; min-height: 1.9rem; }}
+.iconos.cultivos {{ white-space: nowrap; }}
+.picto-etq {{ font-size: .85rem; font-weight: 800; color: #5B6B5E; min-width: 4.4rem; }}
+.picto-etq:empty {{ display: none; }}
+.iconos {{ font-size: 1.35rem; line-height: 1.25; letter-spacing: .03em; overflow-wrap: anywhere; }}
+.iconos .off {{ opacity: .16; filter: grayscale(1); }}
+.iconos .medio {{ opacity: .45; }}
+.picto-frase {{ font-size: .95rem; line-height: 1.35; color: #3E4E40; margin-top: auto; padding-top: .2rem; }}
+.fuente-peq {{ font-size: .82rem; color: #7A867C; line-height: 1.4; margin: .35rem 0 .2rem; }}
+.bloque-tit {{ font-size: 1.6rem; font-weight: 900; color: #1B4D20; margin: 2rem 0 .7rem; letter-spacing: -.01em; }}
+.st-key-dash_anio, [class*="st-key-graf_"] {{ background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
+                                              padding: 1.1rem 1.2rem .9rem; }}
+[class*="st-key-graf_"] {{ height: 100%; }}
+.anio12 {{ display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; margin: .2rem 0 .3rem; }}
+.anio12 .m {{ border-radius: 14px; text-align: center; padding: .5rem 0 .4rem; font-weight: 800; font-size: .95rem;
+             background: #F1F3EF; color: #3E4E40; }}
+.anio12 .m span {{ display: block; font-size: 1.7rem; line-height: 1.25; }}
+.anio12 .m small {{ display: block; font-size: .7rem; font-weight: 900; color: var(--verde); }}
+.anio12 .lluvioso {{ background: var(--azul-fondo); color: #0D47A1; }}
+.anio12 .transicion {{ background: #EEF5FB; color: #2C5D86; }}
+.anio12 .seco {{ background: var(--amarillo-fondo); color: var(--amarillo-texto); }}
+.anio12 .hoy {{ outline: 3px solid var(--verde); outline-offset: 1px; }}
+.sec-cab {{ display: flex; align-items: center; gap: .6rem; margin: .7rem 0 .4rem; }}
+.sec-ico {{ font-size: 2rem; line-height: 1; }}
+.sec-tit {{ font-size: 1.28rem; font-weight: 900; color: #1B4D20; line-height: 1.2; }}
+.graf-ley {{ font-size: .85rem; color: #3E4E40; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .55rem; }}
+.graf-ley i {{ display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-left: .2rem; }}
+.conclusion {{ background: var(--amarillo-fondo); border-left: 6px solid var(--amarillo); border-radius: 12px;
+              padding: .6rem .85rem; font-weight: 800; font-size: 1.05rem; line-height: 1.35; color: #3E2F00;
+              margin: .1rem 0 .5rem; }}
+.plan-lista-agua {{ display: flex; flex-direction: column; gap: .7rem; margin: .3rem 0 .5rem; }}
+.plan-fila {{ border: 2px solid #E3E9E0; border-radius: 16px; padding: .7rem .9rem; }}
+.plan-fila.mejor {{ border-color: var(--verde); background: var(--verde-fondo); }}
+.plan-cab {{ display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; }}
+.plan-letra {{ background: #1B4D20; color: #fff; border-radius: 8px; padding: 0 .5rem; font-weight: 900; }}
+.plan-cult {{ font-size: 1.25rem; }}
+.plan-badge {{ background: var(--verde); color: #fff; border-radius: 999px; padding: .05rem .6rem; font-size: .8rem; font-weight: 800; }}
+.plan-gotas {{ display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .7rem; margin-top: .3rem; }}
+.plan-num {{ font-weight: 900; color: #0D47A1; font-size: 1.1rem; }}
+.plan-detalle {{ font-size: .85rem; color: #5B6B5E; margin-top: .15rem; }}
+.ideas {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }}
+.idea {{ display: flex; gap: .9rem; background: #fff; border-radius: var(--radio); box-shadow: var(--sombra); padding: 1.1rem 1.2rem; }}
+.idea-ico {{ font-size: 2.4rem; line-height: 1; }}
+.idea-tit {{ font-weight: 900; color: #1B4D20; font-size: 1.12rem; margin-bottom: .2rem; }}
+.idea p {{ margin: 0; font-size: 1rem; line-height: 1.45; }}
+.dash-pie {{ font-size: .88rem; color: #5B6B5E; margin: 1.4rem 0 .4rem; }}
 
 /* ---------- Pantalla ancha: 2 columnas ---------- */
+@media (max-width: 899px) and (min-width: 641px) {{
+  .picto-grid {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+}}
 @media (min-width: 900px) {{
   .plan-lista {{ grid-template-columns: 1fr 1fr; }}
 }}
@@ -336,9 +379,9 @@ button[data-variant="pills"][aria-pressed="true"] p {{ color: #fff !important; }
   .marca span {{ font-size: .9rem; }}
   .resumen {{ font-size: 1.15rem; }}
   /* menu: 6 botones en una fila, icono arriba y nombre abajo */
-  .st-key-nav {{ padding: .3rem .2rem; }}
+  .st-key-nav {{ padding: .3rem .1rem; gap: 0 !important; }}
   .st-key-nav [data-testid="stPageLink-NavLink"] {{ flex-direction: column; gap: 0; padding: .3rem 0; }}
-  .st-key-nav [data-testid="stPageLink-NavLink"] p {{ font-size: .72rem !important; letter-spacing: -.01em; }}
+  .st-key-nav [data-testid="stPageLink-NavLink"] p {{ font-size: .66rem !important; letter-spacing: -.02em; }}
   /* temporadas: 1 por fila (Streamlit apila las columnas); cartas: 2 por fila */
   .st-key-fila_temporadas [data-testid="stHorizontalBlock"] {{ flex-direction: column !important; }}
   .st-key-fila_temporadas [data-testid="stColumn"] {{ width: 100% !important; min-width: 100% !important; flex: 1 1 auto !important; }}
@@ -346,13 +389,18 @@ button[data-variant="pills"][aria-pressed="true"] p {{ color: #fff !important; }
   .st-key-fila_cartas [data-testid="stColumn"] {{ min-width: calc(50% - 8px) !important; width: calc(50% - 8px) !important;
                                                  max-width: calc(50% - 8px) !important; flex: 1 1 calc(50% - 8px) !important; }}
   .carta-ico {{ font-size: 2rem; }}
-  /* dashboard: tarjetas de 2 en 2 y graficos a todo el ancho */
-  .kpis {{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }}
-  .kpi {{ padding: .7rem .75rem; }}
-  .kpi-num {{ font-size: 1.45rem; }}
-  .kpi-frase {{ font-size: .85rem; }}
-  [class*="st-key-graf_"] {{ padding: .75rem .7rem .6rem; }}
-  .graf-tit {{ font-size: 1.08rem; }}
+  /* dashboard: todo en una columna */
+  .hero {{ padding: 1.2rem 1.1rem 1rem; border-radius: 20px; }}
+  .hero-tit {{ font-size: 1.85rem; }}
+  .hero-frase {{ font-size: 1.08rem; }}
+  .picto-grid, .ideas {{ grid-template-columns: 1fr; gap: .8rem; }}
+  .picto-num {{ font-size: 2rem; }}
+  .anio12 {{ grid-template-columns: repeat(6, minmax(0, 1fr)); }}
+  .anio12 .m span {{ font-size: 1.45rem; }}
+  .st-key-dash_anio, [class*="st-key-graf_"] {{ padding: .85rem .75rem .7rem; }}
+  .bloque-tit {{ font-size: 1.35rem; margin-top: 1.5rem; }}
+  .sec-tit {{ font-size: 1.12rem; }}
+  .conclusion {{ font-size: .98rem; }}
 }}
 @media (prefers-reduced-motion: reduce) {{ * {{ transition: none !important; }} }}
 </style>

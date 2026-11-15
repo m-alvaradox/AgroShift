@@ -4,7 +4,7 @@ AgroShift - app principal (Streamlit).
 Correr desde la raiz del proyecto:
     streamlit run app/streamlit_app.py
 
-Arma el menu de 6 botones (Mi finca, Dashboard, Jugar, Comparar, Mi plan, Asistente),
+Arma el menu de 6 botones (Mi finca, Jugar, Comparar, Mi plan, Asistente, Dashboard),
 la eleccion de zona y tipo de año (se guarda en st.session_state) y la
 seccion "Vista tecnica" con las paginas de datos para los jueces.
 """
@@ -18,7 +18,6 @@ estilo.aplicar()
 
 PRINCIPALES = [
     st.Page("vistas/inicio.py", title="Mi finca", icon="🏡", default=True),
-    st.Page("vistas/dashboard.py", title="Dashboard", icon="📊"),
     st.Page("vistas/jugar.py", title="Jugar", icon="🎲"),
     st.Page("vistas/comparar.py", title="Comparar", icon="⚖️"),
     st.Page("vistas/plan.py", title="Mi plan", icon="📅"),
@@ -31,7 +30,10 @@ TECNICAS = [
     st.Page("vistas/estrategias.py", title="Estrategias", icon="🌱"),
     st.Page("vistas/recomendacion.py", title="Recomendación", icon="✅"),
 ]
-pg = st.navigation(PRINCIPALES + TECNICAS, position="hidden")
+# Dashboard: al final de la navegacion (despues de Recomendacion) y ultimo boton del menu
+DASHBOARD = st.Page("vistas/dashboard.py", title="Dashboard", icon="📊")
+MENU = PRINCIPALES + [DASHBOARD]
+pg = st.navigation(PRINCIPALES + TECNICAS + [DASHBOARD], position="hidden")
 es_tecnica = pg.title in {p.title for p in TECNICAS}
 es_dashboard = pg.title == "Dashboard"  # tiene sus propios filtros
 
@@ -39,7 +41,7 @@ es_dashboard = pg.title == "Dashboard"  # tiene sus propios filtros
 ui.html('<div class="marca"><b>🌱 AgroShift</b><span>Qué sembrar, cuándo y dónde · Daule</span></div>')
 
 with st.container(key="nav", horizontal=True, wrap=False, gap="small"):
-    for p in PRINCIPALES:
+    for p in MENU:
         estado = "on" if p.title == pg.title else "off"
         with st.container(key=f"nav_{estado}_{p.url_path or 'inicio'}", width="stretch"):
             st.page_link(p, label=p.title, icon=p.icon, width="stretch")
@@ -78,7 +80,7 @@ else:
 if es_tecnica:
     with st.container(key="nav_tecnica", horizontal=True, gap="small", vertical_alignment="center"):
         st.markdown("**🔬 Vista técnica:**", width="content")
-        for p in TECNICAS:
+        for p in TECNICAS + [DASHBOARD]:
             st.page_link(p, label=p.title, icon=p.icon, width="content")
         st.page_link(PRINCIPALES[0], label="Volver a Mi finca", icon="↩️", width="content")
 
