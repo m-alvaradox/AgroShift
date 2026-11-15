@@ -167,21 +167,21 @@ def simular(casillas: list[str], zona_tipo: str, escenario: str, *, clim: pd.Dat
 
     for i, c in enumerate(casillas):
         if c == "Descanso":
-            evento(i, "bueno", "la tierra descansó y recuperó fuerza.", 3)
+            evento(i, "bueno", "la tierra descansaría y recuperaría fuerza.", 3)
             continue
         if i == 0 and zona_tipo == "baja" and escenario == "nino" and c != "Arroz":
             exito[0] = 0.0
-            evento(0, "malo", f"llovió muchísimo y se inundó tu {c.lower()}.", 1)
+            evento(0, "malo", f"si llueve muchísimo, tu {c.lower()} se inundaría.", 1)
         elif i == 0 and zona_tipo == "baja" and not tolera.get(c, False):
             exito[0] = 0.6
-            evento(0, "malo", f"el terreno se encharcó y tu {c.lower()} sufrió.", 1)
+            evento(0, "malo", f"el terreno se encharcaría y tu {c.lower()} sufriría.", 1)
         elif i == 0 and escenario == "nino" and c == "Arroz":
-            evento(0, "info", "fue un año muy lluvioso y tu arroz aguantó el agua.", 2)
+            evento(0, "info", "en un año muy lluvioso tu arroz aguantaría el agua.", 2)
         if i > 0 and c == "Arroz" and escenario == "nina" and zona_tipo != "baja":
             exito[i] = 0.7
-            evento(i, "malo", "llovió poco y el arroz pidió mucho riego.", 1)
+            evento(i, "malo", "con poca lluvia el arroz pediría mucho riego.", 1)
         if c == "Soya":
-            evento(i, "bueno", "la soya le dio fuerza al suelo.", 2)
+            evento(i, "bueno", "la soya le daría fuerza al suelo.", 2)
 
     repetido = len(set(casillas)) == 1 and casillas[0] != "Descanso"
     suelo = SUELO_INICIAL + sum(SIM_CULTIVO[c]["suelo"] for c in casillas)
@@ -189,14 +189,14 @@ def simular(casillas: list[str], zona_tipo: str, escenario: str, *, clim: pd.Dat
     if repetido:
         suelo -= 2
         cosecha -= 2.5
-        evento(2, "malo", f"todo el año {casillas[0].lower()}: llegaron más plagas y el suelo se cansó.", 1)
+        evento(2, "malo", f"todo el año {casillas[0].lower()}: llegarían más plagas y el suelo se cansaría.", 1)
 
     pide = sum(agua_mm.get(c, 0) * falta[i] for i, c in enumerate(casillas))
     pide_arroz = sum(agua_mm["Arroz"] * f for f in falta)
     agua = 10.0 if pide_arroz <= 0 else 10 * (1 - pide / pide_arroz)
 
     if not eventos:
-        evento(0, "info", "llovió como siempre y sembraste tranquilo.", 3)
+        evento(0, "info", "con la lluvia de siempre sembrarías tranquilo.", 3)
     return {"agua": _limitar(agua), "suelo": _limitar(suelo), "cosecha": _limitar(cosecha)}, eventos
 
 
@@ -205,14 +205,14 @@ def frase_resultado(barras: dict) -> str:
     buenos = [nombres[k] for k, v in barras.items() if v >= 7]
     bajos = [nombres[k] for k, v in barras.items() if v < 4]
     if len(buenos) == 3:
-        return "¡Año redondo! Cuidaste el agua, el suelo y tu cosecha."
+        return "¡Año redondo! Cuidarías el agua, el suelo y tu cosecha."
     if buenos and bajos:
-        return f"Te fue bien con {buenos[0]}, pero te faltó cuidar {bajos[0]}."
+        return f"Te iría bien con {buenos[0]}, pero te faltaría cuidar {bajos[0]}."
     if bajos:
-        return f"Año difícil: te faltó cuidar {' y '.join(bajos)}. Prueba otra combinación."
+        return f"Año difícil: te faltaría cuidar {' y '.join(bajos)}. Prueba otra carta."
     if buenos:
         return f"Buen año para {' y '.join(buenos)}. Lo demás se puede mejorar."
-    return "Año regular. Prueba otra combinación para mejorar."
+    return "Año regular. Prueba otra carta para mejorar."
 
 
 def jugar(casillas: list[str], zona_tipo: str, escenario: str, *, clim: pd.DataFrame,

@@ -8,7 +8,8 @@ numpy>=1.26
 plotly>=5.20
 folium>=0.17
 streamlit-folium>=0.22
-shapely>=2.0             # simplificar las zonas del mapa (app/utils/mapa.py)
+shapely>=2.0             # zonas del mapa y en que zona cae la finca (mapa.py, ubicacion.py)
+streamlit_js_eval>=1.0   # "Ubicar mi finca": navigator.geolocation del navegador (ubicacion.py)
 
 # Scripts de datos (NASA POWER, SRTM, graficos)
 requests>=2.31

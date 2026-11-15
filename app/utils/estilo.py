@@ -53,7 +53,8 @@ CSS = f"""
 }}
 
 /* ---------- Base ---------- */
-html, body, .stApp, [class*="st-"]:not([data-testid="stIconMaterial"]), button, input, textarea {{
+html, body, .stApp, [class*="st-"]:not([data-testid="stIconMaterial"]):not([data-testid="stAlertDynamicIcon"]),
+button, input, textarea {{
   font-family: 'Nunito', system-ui, sans-serif !important;
 }}
 .stApp {{ background: var(--fondo); color: var(--texto); }}
@@ -95,8 +96,8 @@ button[data-variant="pills"][aria-pressed="true"] p {{ color: #fff !important; }
 .marca b {{ font-size: 1.6rem; font-weight: 900; color: var(--verde); }}
 .marca span {{ color: #5B6B5E; font-size: 1rem; }}
 .st-key-nav {{ background: #fff; border-radius: var(--radio); box-shadow: var(--sombra); padding: .35rem; }}
-.st-key-nav [data-testid="stPageLink-NavLink"] {{ justify-content: center; border-radius: 14px; padding: .35rem .5rem; }}
-.st-key-nav [data-testid="stPageLink-NavLink"] p {{ font-size: 1.02rem; font-weight: 700; color: #3E4E40; }}
+.st-key-nav [data-testid="stPageLink-NavLink"] {{ justify-content: center; border-radius: 14px; padding: .35rem .25rem; }}
+.st-key-nav [data-testid="stPageLink-NavLink"] p {{ font-size: .9rem; font-weight: 700; color: #3E4E40; }}
 [class*="st-key-nav_on_"] [data-testid="stPageLink-NavLink"] {{ background: var(--verde-fondo); }}
 [class*="st-key-nav_on_"] [data-testid="stPageLink-NavLink"] p {{ color: var(--verde); font-weight: 900; }}
 .st-key-selector {{ background: #fff; border-radius: var(--radio); box-shadow: var(--sombra); padding: .6rem .9rem .8rem; }}
@@ -383,6 +384,143 @@ button[data-variant="pills"][aria-pressed="true"] p {{ color: #fff !important; }
 .idea p {{ margin: 0; font-size: 1rem; line-height: 1.45; }}
 .dash-pie {{ font-size: .88rem; color: #5B6B5E; margin: 1.4rem 0 .4rem; }}
 
+/* ---------- Portada: el menu principal ---------- */
+.portada-cab {{ text-align: center; margin: .2rem 0 1.8rem; }}
+.portada-cab h1.portada-tit {{ font-size: 3.8rem !important; font-weight: 900 !important; letter-spacing: .14em;
+  color: var(--verde) !important; margin: 0 !important; padding: 0 0 0 .14em !important; line-height: 1.05 !important; }}
+.portada-sub {{ font-size: 1.3rem !important; color: #4A5A4D; margin: .5rem 0 0; font-weight: 700; }}
+.portada-cab::after {{ content: ""; display: block; width: 72px; height: 5px; border-radius: 3px;
+  background: var(--amarillo); margin: 1rem auto 0; }}
+.st-key-portada_grid [data-testid="stHorizontalBlock"] {{ gap: 1.1rem !important; }}
+[class*="st-key-portada_"]:not(.st-key-portada_grid) {{
+  position: relative; background: #fff; border-radius: 24px; box-shadow: var(--sombra); padding: 1.4rem 1.3rem;
+  border: 2px solid #E6ECE2; min-height: 132px; justify-content: center;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }}
+[class*="st-key-portada_"]:not(.st-key-portada_grid):hover {{
+  transform: translateY(-4px); box-shadow: 0 12px 28px rgba(46, 60, 40, .18); border-color: var(--verde); }}
+[class*="st-key-portada_"]:not(.st-key-portada_grid):has(a:focus-visible) {{ outline: 3px solid var(--amarillo); outline-offset: 2px; }}
+/* el st.page_link cubre toda la tarjeta: toda la tarjeta es el boton */
+[class*="st-key-portada_"]:not(.st-key-portada_grid) > [data-testid="stElementContainer"]:has([data-testid="stPageLink"]) {{
+  position: absolute !important; inset: 0; z-index: 3; margin: 0 !important; width: 100% !important; }}
+[class*="st-key-portada_"] [data-testid="stPageLink"], [class*="st-key-portada_"] [data-testid="stPageLink"] > div {{ height: 100%; }}
+[class*="st-key-portada_"] [data-testid="stPageLink-NavLink"] {{ width: 100%; height: 100%; opacity: 0; margin: 0; }}
+.ptj {{ display: flex; align-items: center; gap: 1.1rem; }}
+.ptj-ico {{ width: 68px; height: 68px; border-radius: 20px; flex: none; display: flex; align-items: center;
+  justify-content: center; background: var(--verde-fondo); color: var(--verde); }}
+.ptj-ico svg {{ width: 36px; height: 36px; }}
+.st-key-portada_jugar .ptj-ico {{ background: #FFF3CD; color: #9A6B00; }}
+.st-key-portada_opciones .ptj-ico {{ background: var(--azul-fondo); color: #1565C0; }}
+.st-key-portada_plan .ptj-ico {{ background: #F3E5D8; color: #8D5524; }}
+.st-key-portada_asistente .ptj-ico {{ background: #DDF3E8; color: #0B6E4F; }}
+.st-key-portada_dashboard .ptj-ico {{ background: #EDE7F6; color: #5E35B1; }}
+.ptj-nom {{ font-size: 1.5rem; font-weight: 900; color: #1B4D20; line-height: 1.15; }}
+.ptj-lin {{ font-size: 1.02rem; color: #4A5A4D; line-height: 1.35; margin-top: .15rem; }}
+.ptj-flecha {{ margin-left: auto; font-size: 2.2rem; line-height: 1; color: #B5C0B2; transition: color .15s, transform .15s; }}
+[class*="st-key-portada_"]:hover .ptj-flecha {{ color: var(--verde); transform: translateX(3px); }}
+.portada-pie {{ text-align: center; color: #6B786D; font-size: .95rem !important; margin: 1.6rem 0 0; }}
+
+/* ---------- Mi finca: ubicar la finca ---------- */
+.st-key-paso_ubicar {{ background: #fff; border-radius: var(--radio); box-shadow: var(--sombra); padding: 1.3rem 1.3rem 1.1rem;
+  border-top: 6px solid var(--verde); }}
+.ubicar-tit {{ font-size: 1.9rem; font-weight: 900; color: #1B4D20; line-height: 1.15; }}
+.ubicar-txt {{ margin: .3rem 0 0; color: #3E4E40; }}
+.st-key-btn_gps button, .st-key-asis_gps button {{ min-height: 60px; font-size: 1.2rem !important; }}
+.ubicar-o {{ display: flex; align-items: center; gap: .8rem; color: #5B6B5E; font-weight: 800; margin: .2rem 0 0; }}
+.ubicar-o::before, .ubicar-o::after {{ content: ""; flex: 1; height: 2px; background: #E3E9E0; }}
+/* el componente que pide la ubicacion no ocupa lugar (fuera del flujo, pero sigue cargado) */
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-gpscomp_"]), [class*="st-key-gpscomp_"] {{
+  position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden; opacity: 0; pointer-events: none; }}
+[class*="st-key-zona_grande_"] {{ border-radius: var(--radio); padding: 1.1rem 1.3rem; box-shadow: var(--sombra);
+  background: var(--azul-fondo); border-left: 10px solid var(--azul); margin-bottom: .4rem; }}
+.st-key-zona_grande_ladera {{ background: #EEF5E6; border-left-color: #7FA650; }}
+.st-key-zona_grande_loma {{ background: #F6EEDF; border-left-color: #B9863A; }}
+.zg {{ display: flex; align-items: center; gap: 1rem; }}
+.zg-ico {{ font-size: 3rem; line-height: 1; }}
+.zg-tit {{ font-size: 1.85rem; font-weight: 900; color: #1B4D20; line-height: 1.15; }}
+.zg-sub {{ font-size: 1rem; color: #3E4E40; margin-top: .2rem; }}
+.semaforo.gris {{ border-left-color: #B0BEC5; }}
+
+/* ---------- Jugar: mesa de casino ---------- */
+.st-key-mesa, .st-key-mesa_res {{
+  background: radial-gradient(ellipse at 50% 30%, #1F7A4D 0%, #11573A 55%, #0B3F2A 100%);
+  border: 6px solid #6B4A1E; outline: 2px solid #D4AF37; outline-offset: -10px; border-radius: 28px;
+  padding: 1.6rem 1.4rem 1.4rem; box-shadow: 0 10px 26px rgba(0, 0, 0, .25), inset 0 0 40px rgba(0, 0, 0, .35); }}
+.mesa-sub {{ color: #F3EBD2; font-size: 1.1rem; text-align: center; margin-bottom: .4rem; }}
+.mesa-tit {{ color: #FFD54F; font-weight: 900; font-size: 1.6rem; text-align: center; letter-spacing: .02em; }}
+.st-key-mesa label p, .st-key-mesa [data-testid="stCaptionContainer"] p, .st-key-mesa_res [data-testid="stCaptionContainer"] p {{ color: #F3EBD2 !important; }}
+.st-key-mesa_res .frase-res {{ color: #FFFFFF; }}
+.st-key-mesa_res .planta-txt {{ color: #F3EBD2; }}
+.st-key-mesa_res .mini {{ background: #FFFDF5; }}
+.mesa-mes {{ color: #F3EBD2; font-size: 1.1rem; }}
+.mesa-mes b {{ color: #FFD54F; }}
+.st-key-mesa button[kind="secondary"], .st-key-mesa_res button[kind="secondary"] {{
+  background: #FFF8E1; color: #4A3700; border: 2px solid #D4AF37; }}
+.st-key-mesa button[kind="primary"] {{ background: #D4AF37; border-color: #FFE082; color: #2A1F00; }}
+.st-key-mesa button[kind="primary"] p {{ color: #2A1F00 !important; }}
+.st-key-btn_jugar button {{ min-height: 66px !important; font-size: 1.35rem !important; border: none !important;
+  background: linear-gradient(180deg, #F7DC6F 0%, #D4AF37 100%) !important; color: #2A1F00 !important;
+  box-shadow: 0 6px 0 #8C6D1F, 0 10px 18px rgba(0, 0, 0, .35); }}
+.st-key-btn_jugar button p {{ font-size: 1.35rem !important; font-weight: 900 !important; color: #2A1F00 !important; }}
+.st-key-btn_jugar button:disabled {{ opacity: .55; box-shadow: none; }}
+.st-key-mesa_res [data-testid="stPageLink-NavLink"] {{ background: #FFF8E1; border: 2px solid #D4AF37; justify-content: center; }}
+.honesto {{ background: rgba(255, 253, 245, .97); border-left: 6px solid #D4AF37; border-radius: 12px; padding: .65rem .9rem;
+  color: #2A2A1F; font-size: 1.02rem; line-height: 1.4; margin: .2rem 0 .3rem; }}
+.st-key-fila_naipes [data-testid="stHorizontalBlock"] {{ gap: 14px !important; }}
+.naipe {{ perspective: 900px; width: 100%; max-width: 210px; margin: 0 auto; aspect-ratio: 5 / 7; }}
+.naipe-in {{ position: relative; width: 100%; height: 100%; transform-style: preserve-3d; }}
+.naipe .cara {{ position: absolute; inset: 0; border-radius: 14px; backface-visibility: hidden; -webkit-backface-visibility: hidden; }}
+.naipe .frente {{ background: #FFFDF5; border: 3px solid #D4AF37;
+  box-shadow: inset 0 0 0 5px #FFFDF5, inset 0 0 0 6px #E6CB72, 0 6px 16px rgba(0, 0, 0, .35);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .25rem; padding: 14% 9%; text-align: center; }}
+.naipe .reverso {{ transform: rotateY(180deg); border: 3px solid #D4AF37; display: flex; align-items: center; justify-content: center;
+  background: repeating-linear-gradient(45deg, #7E1F24 0 7px, #962A30 7px 14px); box-shadow: 0 6px 16px rgba(0, 0, 0, .35); }}
+.rev-marco {{ width: 78%; height: 84%; border: 2px solid #D4AF37; border-radius: 10px; display: flex; align-items: center;
+  justify-content: center; background: radial-gradient(circle, rgba(0,0,0,.25), transparent 70%); }}
+.rev-marco span {{ color: #F4D774; font-weight: 900; letter-spacing: .08em; transform: rotate(-35deg); font-size: 1rem; }}
+.esq {{ position: absolute; font-family: Georgia, 'Times New Roman', serif; font-weight: 900; font-size: 1.7rem; line-height: 1; color: #8E1B1F; }}
+.esq.sup {{ top: 9px; left: 11px; }}
+.esq.inf {{ bottom: 9px; right: 11px; transform: rotate(180deg); }}
+.naipe-dib {{ display: flex; justify-content: center; align-items: flex-end; gap: 2px; width: 100%; }}
+.naipe-dib svg {{ height: 4.6rem; width: auto; flex: 0 1 auto; min-width: 0; }}
+.naipe-dib svg:only-child {{ height: 6.4rem; }}
+.naipe-nom {{ font-weight: 900; font-size: 1.15rem; color: #1B4D20; line-height: 1.15; margin-top: .35rem; }}
+.naipe-seq {{ font-size: .8rem; color: #5B6B5E; line-height: 1.25; }}
+.naipe.elegida .naipe-in {{ animation: voltear .7s ease-out both; }}
+.naipe.elegida .frente {{ border-color: #FFD54F; box-shadow: inset 0 0 0 5px #FFFDF5, inset 0 0 0 6px #E6CB72,
+  0 0 0 4px rgba(255, 213, 79, .6), 0 12px 24px rgba(0, 0, 0, .45); }}
+.naipe.apagada {{ opacity: .62; filter: saturate(.55); }}
+@keyframes voltear {{ 0% {{ transform: rotateY(180deg) scale(.96); }} 100% {{ transform: rotateY(0) scale(1); }} }}
+.marcador {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; background: #0B1A12; border: 3px solid #D4AF37;
+  border-radius: 16px; padding: 10px; box-shadow: inset 0 0 18px rgba(0, 0, 0, .7); margin: .4rem 0 .8rem; }}
+.marc-celda {{ background: #13261B; border-radius: 10px; text-align: center; padding: .55rem .3rem .5rem; }}
+.marc-etq {{ color: #E8D9A8; font-size: .82rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }}
+.marc-num {{ font-variant-numeric: tabular-nums; color: #FFD54F; font-size: 2.6rem; font-weight: 900; line-height: 1.1;
+  text-shadow: 0 0 10px rgba(255, 213, 79, .5); }}
+.marc-num small {{ font-size: 1rem; color: #C9B26A; text-shadow: none; }}
+.marc-pal {{ display: inline-block; font-size: .82rem; font-weight: 800; border-radius: 999px; padding: 0 .55rem; }}
+.marc-pal.Bien {{ background: #2E7D32; color: #fff; }}
+.marc-pal.Regular {{ background: #F9A825; color: #2A1F00; }}
+.marc-pal.Bajo {{ background: #C62828; color: #fff; }}
+
+/* ---------- Mis opciones ---------- */
+.opc-tit {{ font-size: 2.7rem; font-weight: 900; color: #1B4D20; letter-spacing: .05em; line-height: 1.1; margin: .3rem 0 1rem; }}
+.opc-lista {{ display: flex; flex-direction: column; gap: .8rem; }}
+.opc {{ position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
+  gap: .3rem 1rem; background: #fff; border-radius: 18px; box-shadow: var(--sombra); padding: .95rem 1.2rem; border: 3px solid transparent; }}
+.opc.tuya {{ border-color: var(--verde); background: var(--verde-fondo); }}
+.opc-si {{ font-size: 1.2rem; }}
+.opc-si b {{ font-weight: 900; color: #1B4D20; letter-spacing: .02em; }}
+.opc-flecha {{ font-size: 1.9rem; font-weight: 900; color: var(--amarillo); line-height: 1; }}
+.opc-plan {{ font-size: 1.22rem; font-weight: 700; color: #1F2A1F; }}
+.opc-plan b {{ background: #1B4D20; color: #fff; border-radius: 8px; padding: 0 .45rem; }}
+.opc-plan small {{ display: block; font-size: .88rem; font-weight: 600; color: #5B6B5E; margin-top: .1rem; }}
+.opc-tuya {{ position: absolute; top: -.75rem; right: 1rem; background: var(--verde); color: #fff; font-size: .8rem; font-weight: 900;
+  border-radius: 999px; padding: .05rem .65rem; }}
+.opc-pie {{ font-size: .98rem !important; color: #4A5A4D; margin: .7rem 0 .4rem; }}
+
+/* ---------- Mi plan ---------- */
+.plan-elegido {{ margin: .2rem 0 0; }}
+
 /* ---------- Pantalla ancha: 2 columnas ---------- */
 @media (max-width: 899px) and (min-width: 641px) {{
   .picto-grid {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
@@ -401,7 +539,10 @@ button[data-variant="pills"][aria-pressed="true"] p {{ color: #fff !important; }
   /* menu: 6 botones en una fila, icono arriba y nombre abajo */
   .st-key-nav {{ padding: .3rem .1rem; gap: 0 !important; }}
   .st-key-nav [data-testid="stPageLink-NavLink"] {{ flex-direction: column; gap: 0; padding: .3rem 0; }}
-  .st-key-nav [data-testid="stPageLink-NavLink"] p {{ font-size: .66rem !important; letter-spacing: -.02em; }}
+  .st-key-nav [data-testid="stPageLink-NavLink"] p, .st-key-nav [data-testid="stPageLink-NavLink"] span {{
+    font-size: .64rem !important; letter-spacing: -.02em; white-space: normal !important; line-height: 1.05; text-align: center; }}
+  .st-key-nav [data-testid="stPageLink-NavLink"] span {{ overflow: visible; }}
+  .st-key-nav [data-testid="stPageLink-NavLink"] {{ min-height: 52px; }}
   /* temporadas: 1 por fila (Streamlit apila las columnas); cartas: 2 por fila */
   .st-key-fila_temporadas [data-testid="stHorizontalBlock"] {{ flex-direction: column !important; }}
   .st-key-fila_temporadas [data-testid="stColumn"] {{ width: 100% !important; min-width: 100% !important; flex: 1 1 auto !important; }}
@@ -421,8 +562,48 @@ button[data-variant="pills"][aria-pressed="true"] p {{ color: #fff !important; }
   .bloque-tit {{ font-size: 1.35rem; margin-top: 1.5rem; }}
   .sec-tit {{ font-size: 1.12rem; }}
   .conclusion {{ font-size: .98rem; }}
+  /* portada */
+  .portada-cab h1.portada-tit {{ font-size: 2.6rem !important; letter-spacing: .1em; padding-left: .1em !important; }}
+  .portada-sub {{ font-size: 1.08rem !important; }}
+  [class*="st-key-portada_"]:not(.st-key-portada_grid) {{ min-height: 104px; padding: 1rem 1rem; border-radius: 20px; }}
+  .ptj-ico {{ width: 56px; height: 56px; border-radius: 16px; }}
+  .ptj-ico svg {{ width: 30px; height: 30px; }}
+  .ptj-nom {{ font-size: 1.28rem; }}
+  .ptj-lin {{ font-size: .95rem; }}
+  /* ubicar */
+  .ubicar-tit {{ font-size: 1.5rem; }}
+  .zg-tit {{ font-size: 1.4rem; }}
+  .zg-ico {{ font-size: 2.4rem; }}
+  /* casino: las 3 cartas siguen en una fila */
+  .st-key-mesa, .st-key-mesa_res {{ padding: 1.1rem .7rem 1rem; border-width: 4px; outline-offset: -8px; border-radius: 22px; }}
+  .st-key-fila_naipes [data-testid="stHorizontalBlock"] {{ flex-direction: row !important; flex-wrap: nowrap !important; gap: 8px !important; }}
+  .st-key-fila_naipes [data-testid="stColumn"] {{ min-width: 0 !important; width: calc(33.3% - 6px) !important; flex: 1 1 0 !important; }}
+  .st-key-fila_naipes .stButton button {{ min-height: 44px; padding: 0 .3rem; }}
+  .naipe .frente {{ padding: 18% 6% 14%; }}
+  .esq {{ font-size: 1.15rem; }}
+  .esq.sup {{ top: 6px; left: 7px; }}
+  .esq.inf {{ bottom: 6px; right: 7px; }}
+  .naipe-dib svg {{ height: 2.2rem; }}
+  .naipe-dib svg:only-child {{ height: 3rem; }}
+  .naipe-nom {{ font-size: .82rem; }}
+  .naipe-seq {{ display: none; }}
+  .st-key-mesa_res .planta svg {{ width: 105px; }}
+  .rev-marco span {{ font-size: .7rem; }}
+  .mesa-tit {{ font-size: 1.3rem; }}
+  .marc-num {{ font-size: 1.8rem; }}
+  .marc-etq {{ font-size: .68rem; letter-spacing: .02em; }}
+  .st-key-btn_jugar button p {{ font-size: 1.2rem !important; }}
+  /* mis opciones: una columna */
+  .opc-tit {{ font-size: 2rem; }}
+  .opc {{ grid-template-columns: 1fr; padding: .85rem 1rem; }}
+  .opc-flecha {{ display: none; }}
+  .opc-si {{ font-size: 1.08rem; }}
+  .opc-plan {{ font-size: 1.12rem; }}
 }}
-@media (prefers-reduced-motion: reduce) {{ * {{ transition: none !important; }} }}
+@media (prefers-reduced-motion: reduce) {{
+  * {{ transition: none !important; }}
+  .naipe.elegida .naipe-in {{ animation: none; }}
+}}
 </style>
 """
 

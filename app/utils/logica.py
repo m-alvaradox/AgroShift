@@ -24,7 +24,7 @@ def meses_con_agua(serie: pd.DataFrame) -> pd.DataFrame:
 
 CRITERIOS = {
     "nota_agua": "Ahorrar agua",
-    "nota_suelo": "Cuidar el suelo",
+    "nota_suelo": "Mejorar el suelo",
     "nota_plagas": "Menos plagas",
     "nota_ingresos": "Ganar más",
 }
@@ -174,6 +174,27 @@ def senal_agua(serie: pd.DataFrame) -> dict:
                 "texto": f"En {mes} el satélite vio agua en la superficie. No siembres soya ni maíz ahí."}
     return {"estado": "bien", "titulo": "Sin agua encharcada",
             "texto": f"En {mes} el satélite no vio agua acumulada en el terreno."}
+
+
+def senal_agua_zona(serie: pd.DataFrame) -> dict:
+    """Agua sobre el terreno de UNA zona: % de la zona con agua el ultimo mes con foto (pct_agua)."""
+    if "pct_agua" not in serie or serie["pct_agua"].notna().sum() == 0:
+        return senal_agua(serie)
+    s = serie.dropna(subset=["pct_agua"]).sort_values("fecha")
+    ult = s.iloc[-1]
+    f = pd.Timestamp(ult["fecha"])
+    cuando = f"{MESES_LARGOS[f.month - 1]} de {f.year}"
+    con_agua = meses_con_agua(s)
+    historia = (f" En los {s['fecha'].dt.year.nunique()} años de fotos hubo agua en {len(con_agua)} meses, "
+                f"casi siempre de {MESES_LARGOS[int(con_agua['fecha'].dt.month.min()) - 1]} a "
+                f"{MESES_LARGOS[int(con_agua['fecha'].dt.month.max()) - 1]}." if len(con_agua) else
+                " En los años de fotos el satélite casi nunca vio agua en tu zona.")
+    pct = float(ult["pct_agua"])
+    if pct >= UMBRAL_AGUA_PCT:
+        return {"estado": "alerta", "titulo": "Agua sobre el terreno",
+                "texto": f"En {cuando} el satélite vio agua en el {pct:.0f} % de tu zona.{historia}"}
+    return {"estado": "bien", "titulo": "Sin agua encharcada",
+            "texto": f"En {cuando} el satélite vio agua en menos del {UMBRAL_AGUA_PCT:.0f} % de tu zona.{historia}"}
 
 
 def mes_actual() -> int:

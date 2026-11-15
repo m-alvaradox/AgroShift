@@ -68,6 +68,76 @@ def pesos_actuales() -> dict:
     return {c: (5 if c in elegidas else 1) for c in logica.CRITERIOS}
 
 
+# --- Respuestas del Asistente: se guardan una vez y las usan todas las paginas ---------------
+# Claves de st.session_state que NO son de widgets (Streamlit no las borra al cambiar de pagina):
+#   zona_confirmada  True cuando el productor dijo o ubico su finca (GPS, mapa o a mano)
+#   ubicacion        {"fuente": "gps"|"mapa"|"mano", "zona_id", "lat", "lon", ...}
+#   objetivo         clave de logica.CRITERIOS (nota_agua, nota_suelo, nota_plagas, nota_ingresos)
+#   mes_inicio       0-11, mes desde el que empieza el plan
+#   zona_pendiente   zona por aplicar antes de dibujar el selector de la cabecera
+OBJETIVOS = logica.CRITERIOS
+ICONO_OBJETIVO = {"nota_agua": "💧", "nota_suelo": "🪱", "nota_plagas": "🐛", "nota_ingresos": "💵"}
+FUENTE_UBICACION = {"gps": "con el GPS de tu teléfono", "mapa": "tocando el mapa", "mano": "elegida por ti"}
+
+
+def fijar_zona(zid: int, **ubicacion):
+    """Guarda la zona del productor. Se aplica al inicio de la siguiente corrida (streamlit_app.py)."""
+    st.session_state["zona_pendiente"] = int(zid)
+    st.session_state["zona_confirmada"] = True
+    st.session_state["ubicacion"] = {"fuente": "mano", **ubicacion, "zona_id": int(zid)}
+
+
+def olvidar_zona():
+    for k in ("zona_confirmada", "ubicacion"):
+        st.session_state.pop(k, None)
+
+
+def objetivo() -> str | None:
+    k = st.session_state.get("objetivo")
+    return k if k in OBJETIVOS else None
+
+
+def guardar_objetivo(k: str):
+    st.session_state["objetivo"] = k
+    st.session_state["prio_guardadas"] = [k]  # el orden de los planes usa lo que quiere lograr
+
+
+def mes_inicio() -> int | None:
+    m = st.session_state.get("mes_inicio")
+    return m if isinstance(m, int) and 0 <= m <= 11 else None
+
+
+def guardar_mes(m: int):
+    st.session_state["mes_inicio"] = int(m)
+
+
+def anio_de_inicio(mes0: int) -> int:
+    """Año del mes de inicio: si el mes ya paso este año, es el del año que viene."""
+    from datetime import date
+    hoy = date.today()
+    return hoy.year + (1 if mes0 < hoy.month - 1 else 0)
+
+
+def mejores_por_objetivo(zid: int, esc: str) -> dict:
+    """{criterio: [letras]} con la(s) estrategia(s) de mejor nota en estrategias.csv para la zona y el año."""
+    est = carga.estrategias()
+    f = est[(est["zona_id"] == zid) & (est["escenario"] == esc)]
+    if f.empty:
+        return {}
+    return {c: sorted(f.loc[f[c] == f[c].max(), "estrategia"]) for c in OBJETIVOS}
+
+
+def recomendada_para(zid: int, esc: str, criterio: str | None) -> str | None:
+    """La mejor estrategia para lo que quiere lograr; si empatan, la de mejor nota general."""
+    est = carga.estrategias()
+    f = est[(est["zona_id"] == zid) & (est["escenario"] == esc)].copy()
+    if f.empty:
+        return None
+    f["general"] = f[list(OBJETIVOS)].mean(axis=1)
+    orden = [criterio, "general"] if criterio in OBJETIVOS else ["general"]
+    return str(f.sort_values(orden, ascending=False)["estrategia"].iloc[0])
+
+
 def tipo_zona(nombre: str) -> str:
     """
     'loma', 'ladera', 'baja' o 'transicion' segun el nombre_comun de la zona
@@ -305,6 +375,14 @@ def semaforo(titulo: str, icono: str, s: dict, real: bool, conf: str | None = No
             f'{confianza(conf) if conf else ""}</div></div>')
 
 
+COLOR_SENAL = {"bien": "verde", "atento": "amarillo", "alerta": "rojo", "sin": "gris"}
+
+
+def semaforo_de_senal(s: dict) -> dict:
+    """Convierte una senal de logica.py ({estado, titulo, texto}) al formato de semaforo()."""
+    return {"color": COLOR_SENAL.get(s["estado"], "gris"), "palabra": s["titulo"], "texto": s["texto"]}
+
+
 def barra(nombre: str, icono: str, valor: float, color: str, palabra: str) -> str:
     n = max(0, min(10, int(round(valor))))
     segs = "".join('<i class="on"></i>' if k < n else "<i></i>" for k in range(10))
@@ -363,3 +441,61 @@ def planta_svg(animo: str) -> str:
            f'<path d="{p["boca"]}" stroke="#3E2723" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
            '</svg>')
     return f'<div class="planta">{svg}<div class="planta-txt">{p["texto"]}</div></div>'
+
+# --- Naipes del juego (estilo casino) ----------------------------------------------------------
+# Dibujos simples en SVG de cada cultivo para el centro de la carta (sin imagenes externas).
+_DIBUJO = {
+    "Arroz": ('<path d="M30 76 C30 56 31 38 38 20" stroke="#5E8C31" stroke-width="2.6" fill="none"/>'
+              '<path d="M30 70 C22 58 16 50 8 46" stroke="#7CA843" stroke-width="2.4" fill="none"/>'
+              '<path d="M31 62 C38 54 46 50 54 50" stroke="#7CA843" stroke-width="2.4" fill="none"/>'
+              + "".join(f'<ellipse cx="{x}" cy="{y}" rx="2.6" ry="5" fill="#E2B53E" transform="rotate({r} {x} {y})"/>'
+                        for x, y, r in [(38, 18, 20), (42, 24, 35), (35, 25, -10), (45, 31, 45), (37, 32, 5),
+                                        (47, 38, 55), (39, 39, 15), (48, 45, 65)])),
+    "Soya": ('<path d="M30 76 C30 60 30 44 30 30" stroke="#5E8C31" stroke-width="2.6" fill="none"/>'
+             '<path d="M30 44 C20 40 12 32 12 24 C22 26 28 34 30 44Z" fill="#7CA843"/>'
+             '<path d="M30 36 C40 32 48 24 48 16 C38 18 32 26 30 36Z" fill="#8DB255"/>'
+             '<path d="M18 60 C14 52 22 44 30 50 C38 56 42 66 34 70 C28 72 22 68 18 60Z" fill="#B5C76A"'
+             ' stroke="#6E8B2E" stroke-width="1.5"/>'
+             '<circle cx="23" cy="56" r="3.4" fill="#DCE6A0"/><circle cx="29" cy="60" r="3.4" fill="#DCE6A0"/>'
+             '<circle cx="34" cy="65" r="3.2" fill="#DCE6A0"/>'),
+    "Maíz": ('<path d="M30 78 C18 66 14 46 20 30 C24 46 28 58 30 78Z" fill="#7CA843"/>'
+             '<path d="M30 78 C42 66 46 46 40 30 C36 46 32 58 30 78Z" fill="#5E8C31"/>'
+             '<ellipse cx="30" cy="38" rx="9" ry="22" fill="#F2C230" stroke="#C99A16" stroke-width="1.4"/>'
+             + "".join(f'<circle cx="{x}" cy="{y}" r="1.7" fill="#D9A11A"/>'
+                       for y in range(22, 58, 6) for x in (26, 30, 34))
+             + '<path d="M30 16 C28 10 32 6 30 2" stroke="#C99A16" stroke-width="1.5" fill="none"/>'),
+    "Descanso": ('<path d="M10 70 H50" stroke="#8D6E63" stroke-width="3"/>'
+                 '<path d="M20 70 C20 58 28 52 36 50 C34 60 28 66 20 70Z" fill="#C59A6B"/>'
+                 '<path d="M34 70 C36 62 42 58 48 58 C46 64 42 68 34 70Z" fill="#A1887F"/>'),
+}
+
+
+def dibujo_cultivo(nombre: str, ancho: int = 60) -> str:
+    return (f'<svg viewBox="0 0 60 80" width="{ancho}" role="img" aria-label="{escape(nombre)}">'
+            f'{_DIBUJO.get(nombre, _DIBUJO["Descanso"])}</svg>')
+
+
+def naipe_html(letra: str, nombre: str, secuencia: list[str], elegida: bool = False,
+               otra_elegida: bool = False) -> str:
+    """Carta con proporcion de naipe: letra en las esquinas, dibujo al centro, borde dorado y reverso."""
+    unicos = list(dict.fromkeys(secuencia))  # cultivos sin repetir, en orden
+    dibujos = "".join(dibujo_cultivo(c, 54 if len(unicos) > 1 else 78) for c in unicos)
+    estado = " elegida" if elegida else (" apagada" if otra_elegida else "")
+    return (f'<div class="naipe{estado}"><div class="naipe-in">'
+            f'<div class="cara frente"><span class="esq sup">{letra}</span>'
+            f'<div class="naipe-dib">{dibujos}</div>'
+            f'<div class="naipe-nom">{escape(nombre)}</div>'
+            f'<div class="naipe-seq">{escape(" · ".join(secuencia))}</div>'
+            f'<span class="esq inf">{letra}</span></div>'
+            '<div class="cara reverso"><div class="rev-marco"><span>AgroShift</span></div></div>'
+            '</div></div>')
+
+
+def marcador(barras: dict, palabras: dict) -> str:
+    """Tablero de resultados tipo marcador: agua, suelo y cosecha de 0 a 10."""
+    celdas = "".join(
+        f'<div class="marc-celda"><div class="marc-etq">{etq}</div>'
+        f'<div class="marc-num">{num(barras[k], 1)}<small>/10</small></div>'
+        f'<div class="marc-pal {palabras[k]}">{palabras[k]}</div></div>'
+        for k, etq in (("agua", "Ahorro de agua"), ("suelo", "Salud del suelo"), ("cosecha", "Cosecha")))
+    return f'<div class="marcador">{celdas}</div>'

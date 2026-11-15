@@ -80,8 +80,9 @@ Se abre en `http://localhost:8501`. Funciona en computadora y en celular.
 ```
 app/                 la app (Streamlit)
   streamlit_app.py   menú, zona y tipo de año, pie con el aviso técnico
-  vistas/            una página por archivo (Mi finca, Jugar, Comparar, Mi plan, Asistente,
-                     Dashboard y la vista técnica: Clima, Mi campo, Estrategias, Recomendación)
+  vistas/            una página por archivo (portada, Mi finca, Jugar, Mis opciones, Mi plan,
+                     Asistente, Dashboard y la vista técnica: Clima, Mi campo, Estrategias,
+                     Recomendación)
   utils/             carga de datos, lógica, mapa, estilo y piezas de la interfaz
   data/              datos adaptados para la app
   static/meses/      fotos del satélite de cada mes (color real y verdor)

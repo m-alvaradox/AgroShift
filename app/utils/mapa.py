@@ -29,6 +29,7 @@ AOI = carga.ROOT / "data" / "aoi_daule.geojson"
 TOLERANCIA = 0.0005      # grados (~55 m): suficiente para ver las zonas a zoom 9-14
 EPSG_DAULE = 32717       # UTM 17 Sur, el que usa P3 para sus GeoTIFF
 ZOOM_INICIAL, ZOOM_MIN, ZOOM_MAX = 11, 9, 18
+ZOOM_FINCA = 14         # mapa centrado en la finca ubicada
 MARGEN = 0.35            # grados que se puede mover el mapa fuera de Daule
 
 ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
@@ -197,11 +198,13 @@ def _leyenda_html(tipos: list[str], rasters: dict) -> str:
 
 # --- Mapa -----------------------------------------------------------------------------
 
-def construir(zid: int) -> folium.Map:
+def construir(zid: int, punto: tuple[float, float] | None = None) -> folium.Map:
+    """Mapa de las zonas con la zona zid resaltada. Con punto=(lat, lon): centrado en la finca y con marcador."""
     geo, (sw, ne), _ = zonas_mapa()
     (sur, oeste), (norte, este) = sw, ne
+    centro = list(punto) if punto else [(sur + norte) / 2, (oeste + este) / 2]
     mapa = folium.Map(
-        location=[(sur + norte) / 2, (oeste + este) / 2], zoom_start=ZOOM_INICIAL,
+        location=centro, zoom_start=ZOOM_FINCA if punto else ZOOM_INICIAL,
         min_zoom=ZOOM_MIN, max_zoom=ZOOM_MAX, tiles=None, control_scale=True,
         max_bounds=True, min_lat=sur - MARGEN, max_lat=norte + MARGEN,
         min_lon=oeste - MARGEN, max_lon=este + MARGEN,
@@ -232,8 +235,9 @@ def construir(zid: int) -> folium.Map:
         p = feature["properties"]
         elegida = p.get("zona_id") == zid
         color = ui.COLOR_ZONA.get(p.get("tipo"), "#888")
+        relleno = (0.3 if elegida else 0.15) if punto else (0.6 if elegida else 0.35)  # cerca se ve el satelite
         return {"fillColor": color, "color": "#FFFFFF" if elegida else color,
-                "weight": 1.6 if elegida else 0.6, "fillOpacity": 0.6 if elegida else 0.35}
+                "weight": 1.6 if elegida else 0.6, "fillOpacity": relleno}
 
     folium.GeoJson(
         geo, name="Zonas", style_function=estilo,
@@ -258,7 +262,12 @@ def construir(zid: int) -> folium.Map:
              if any(f["properties"]["tipo"] == t for f in geo["features"])]
     Leyenda(_leyenda_html(tipos, rasters)).add_to(mapa)
 
-    mapa.fit_bounds([sw, ne])
+    if punto:
+        folium.Marker(list(punto), tooltip="Tu finca",
+                      icon=folium.Icon(color="red", icon="home", prefix="fa")).add_to(mapa)
+        folium.Circle(list(punto), radius=120, color="#C62828", weight=2, fill=False).add_to(mapa)
+    else:
+        mapa.fit_bounds([sw, ne])
     return mapa
 
 
